@@ -16,6 +16,11 @@ def healthz():
     return {"ok": True}
 
 
+@router.get("/readyz")
+def readyz():
+    return {"ready": True}
+
+
 TRACKS = {}
 INDEX = emb.EmbeddingIndex(dim=1024)
 
@@ -24,9 +29,9 @@ INDEX = emb.EmbeddingIndex(dim=1024)
 async def analyze(files: List[UploadFile] = File(...)):
     results = []
     for f in files:
-        wav_path, dur = await ing.load_audio(f)
+        wav_path, dur, wave_png, spec_png, tid = await ing.load_audio(f)
         fdict = feat.extract_features(wav_path)
-        vec, tid = emb.embed_from_file(wav_path)
+        vec, _ = emb.embed_from_file(wav_path)
         INDEX.add(tid, vec)
         tags = tag.tag_from_features(fdict, vec)
         item = {
@@ -36,6 +41,7 @@ async def analyze(files: List[UploadFile] = File(...)):
             **fdict,
             "embedding_dim": len(vec),
             "tags": tags,
+            "spectrogram_png": spec_png,
         }
         TRACKS[tid] = item
         results.append(item)
@@ -65,7 +71,9 @@ def report(payload: dict):
     if not tid or tid not in TRACKS:
         return {"pdf": None}
     path = rep.build_pdf(TRACKS[tid], logo_path="assets/ma-logo.png")
-    return {"pdf": path}
+    # Return a web path under /reports for the frontend
+    web_path = "/reports/" + path.split("/")[-1]
+    return {"pdf": web_path}
 
 
 @router.get("/library")

@@ -7,6 +7,7 @@ import numpy as np
 import soundfile as sf
 import librosa
 import matplotlib.pyplot as plt
+from museagent.backend.utils.io_utils import md5_of_file
 
 
 def _ensure_dirs() -> str:
@@ -35,12 +36,12 @@ def _save_spec_png(y: np.ndarray, sr: int, out_png: str) -> None:
     plt.close()
 
 
-async def load_audio(file: UploadFile, target_sr: int = 16000) -> Tuple[str, float]:
+async def load_audio(file: UploadFile, target_sr: int = 16000) -> Tuple[str, float, str, str, str]:
     """Decode, resample to mono target_sr, trim silence, normalize, and cache WAV+PNGs.
 
     Returns
     -------
-    (normalized_wav_path, duration_sec)
+    (normalized_wav_path, duration_sec, wave_png_path, spec_png_path, track_id)
     """
     cache_root = _ensure_dirs()
     raw_bytes = await file.read()
@@ -77,6 +78,9 @@ async def load_audio(file: UploadFile, target_sr: int = 16000) -> Tuple[str, flo
     _save_wave_png(y, target_sr, wave_png)
     _save_spec_png(y, target_sr, spec_png)
 
-    return wav_path, duration_sec
+    # Deterministic track id from normalized wav content
+    track_id = md5_of_file(wav_path)
+
+    return wav_path, duration_sec, wave_png, spec_png, track_id
 
 
