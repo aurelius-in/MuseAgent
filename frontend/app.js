@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailClose = document.getElementById('detail-close');
   const chartRadar = document.getElementById('chart-radar');
   const chartChroma = document.getElementById('chart-chroma');
+  let lastLibrary = [];
 
   // WebAudio: gentle click sound
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -95,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })();
     const tracks = j.tracks || [];
+    lastLibrary = tracks;
     grid.innerHTML = tracks.map(t => (
       `<div class="card">`+
       (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:100%;height:120px;object-fit:cover;border-radius:10px"/>` : '')+
@@ -122,9 +124,17 @@ document.addEventListener('DOMContentLoaded', () => {
     grid.querySelectorAll('.similar-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
       playClick();
       const tid = ev.currentTarget.getAttribute('data-tid');
-      const r = await fetch(`/similar?track_id=${encodeURIComponent(tid)}&k=3`);
-      const j = await r.json();
-      alert('Top similar:\n' + (j.neighbors || []).map(n => `${n.id} (d=${Number(n.distance).toFixed(2)})\n${n.explanation}`).join('\n\n'));
+      if (offlineToggle && offlineToggle.checked) {
+        // Offline: compute naive nearest by MFCC L2
+        const ref = lastLibrary.find(x => x.id === tid) || lastLibrary[0];
+        const dists = lastLibrary.filter(x => x.id !== tid).map(x => ({ id: x.id, d: l2(ref.features.mfcc_mean, x.features.mfcc_mean), a: ref, b: x }));
+        dists.sort((a,b)=>a.d-b.d);
+        showSimilarModal(dists.slice(0,3));
+      } else {
+        const r = await fetch(`/similar?track_id=${encodeURIComponent(tid)}&k=3`);
+        const j = await r.json();
+        showSimilarModal((j.neighbors||[]).map(n => ({ id:n.id, d:n.distance, a:lastLibrary.find(x=>x.id===tid), b:lastLibrary.find(x=>x.id===n.id) })));
+      }
     }));
 
     grid.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
@@ -185,6 +195,37 @@ document.addEventListener('DOMContentLoaded', () => {
       const j = await r.json();
       if (j.pdf) window.open(j.pdf, '_blank');
     }));
+  }
+
+  // Similar modal with heatmap
+  function l2(a,b){ let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ const d=(a[i]-b[i]); s+=d*d;} return Math.sqrt(s); }
+  function showSimilarModal(items){
+    const modal = document.createElement('div');
+    modal.className = 'detail show';
+    modal.innerHTML = `
+      <div class="detail-inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <h3 style="margin:0">Top Similar</h3>
+          <button id="sim-close">Close</button>
+        </div>
+        <div id="sim-list" class="grid"></div>
+      </div>`;
+    document.body.appendChild(modal);
+    const list = modal.querySelector('#sim-list');
+    list.innerHTML = items.map(it => `
+      <div class="card">
+        <div class="muted" style="margin-bottom:.5rem">distance ${Number(it.d).toFixed(2)}</div>
+        <canvas width="240" height="240" class="hover-float"></canvas>
+      </div>`).join('');
+    import('./heatmap.js').then(mod => {
+      list.querySelectorAll('canvas').forEach((c,i)=>{
+        const it = items[i];
+        const a = it.a?.features?.chroma_mean || [];
+        const b = it.b?.features?.chroma_mean || [];
+        mod.drawChromaHeatmap(c, a, b);
+      });
+    }).catch(()=>{});
+    modal.querySelector('#sim-close').addEventListener('click', ()=> modal.remove());
   }
   if (form && input && results) {
     form.addEventListener('submit', async (e) => {
