@@ -1,0 +1,16 @@
+@keyframes softPulse {
+  0% { box-shadow: 0 0 0 rgba(242,212,96,0); }
+  50% { box-shadow: 0 0 22px rgba(242,212,96,0.18); }
+  100% { box-shadow: 0 0 0 rgba(242,212,96,0); }
+}
+
+.pulse-once { animation: softPulse 800ms ease 1; }
+
+@keyframes floatUp {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+.hover-float:hover { animation: floatUp 160ms ease forwards; }
+
+
