@@ -7,6 +7,7 @@ from ..agents import embedding_agent as emb
 from ..agents import tagging_agent as tag
 from ..agents import recommendation_agent as rec
 from ..agents import report_agent as rep
+import os
 from ..utils.library import load_library, save_library
 
 router = APIRouter()
@@ -35,6 +36,9 @@ async def analyze(files: List[UploadFile] = File(...)):
         vec, _ = emb.embed_from_file(wav_path)
         INDEX.add(tid, vec)
         tags = tag.tag_from_features(fdict, vec)
+        # Normalize spectrogram path to web path under /data
+        rel_spec = os.path.relpath(spec_png, "museagent/backend/data").replace("\\", "/")
+        web_spec = f"/data/{rel_spec}"
         item = {
             "id": tid,
             "filename": f.filename,
@@ -42,7 +46,7 @@ async def analyze(files: List[UploadFile] = File(...)):
             **fdict,
             "embedding_dim": len(vec),
             "tags": tags,
-            "spectrogram_png": spec_png,
+            "spectrogram_png": web_spec,
         }
         TRACKS[tid] = item
         results.append(item)

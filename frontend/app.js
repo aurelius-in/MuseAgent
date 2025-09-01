@@ -29,9 +29,104 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('upload-form');
   const input = document.getElementById('file-input');
   const results = document.getElementById('results');
+  const grid = document.getElementById('grid');
+  const reloadLib = document.getElementById('reload-lib');
+  const soundToggle = document.getElementById('sound-toggle');
+  const detail = document.getElementById('detail');
+  const detailTitle = document.getElementById('detail-title');
+  const detailMeta = document.getElementById('detail-meta');
+  const detailClose = document.getElementById('detail-close');
+  const chartRadar = document.getElementById('chart-radar');
+  const chartChroma = document.getElementById('chart-chroma');
+
+  // WebAudio: gentle click sound
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  let audioCtx;
+  function playClick() {
+    if (!soundToggle || !soundToggle.checked) return;
+    audioCtx = audioCtx || new AudioContext();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(660, audioCtx.currentTime);
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+    o.connect(g).connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.13);
+  }
+
+  function openDetail(track) {
+    if (!detail) return;
+    detailTitle.textContent = track.filename;
+    detailMeta.textContent = `BPM ${track.tempo_bpm} • Key ${track.key_guess} • Mood ${track.tags?.mood || ''}`;
+    // Draw simple radar and chroma bars
+    try {
+      import('./charts.js').then(mod => {
+        const mfcc = track.features?.mfcc_mean || [];
+        mod.drawRadar(chartRadar, mfcc);
+        const chroma = track.features?.chroma_mean || [];
+        mod.drawBars(chartChroma, chroma);
+      }).catch(() => {});
+    } catch (_) {}
+    detail.classList.add('show');
+  }
+  if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
+
+  async function loadLibrary() {
+    if (!grid) return;
+    grid.innerHTML = '<span class="muted">Loading library...</span>';
+    const r = await fetch('/library');
+    const j = await r.json();
+    const tracks = j.tracks || [];
+    grid.innerHTML = tracks.map(t => (
+      `<div class="card">`+
+      (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:100%;height:120px;object-fit:cover;border-radius:10px"/>` : '')+
+      `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
+      `<div style="font-weight:600">${t.filename}</div>`+
+      `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
+      `</div>`+
+      `<div class="muted" style="font-size:.9rem">Key ${t.key_guess} • ${t.tags?.mood || ''}</div>`+
+      `<div class="controls" style="margin-top:.5rem">`+
+      `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
+      `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
+      `<button data-tid="${t.id}" class="report-btn">Report</button>`+
+      `</div>`+
+      `</div>`
+    )).join('');
+
+    // Bind actions
+    grid.querySelectorAll('.detail-btn').forEach(btn => btn.addEventListener('click', (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      const t = (tracks || []).find(x => x.id === tid);
+      if (t) openDetail(t);
+    }));
+
+    grid.querySelectorAll('.similar-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      const r = await fetch(`/similar?track_id=${encodeURIComponent(tid)}&k=3`);
+      const j = await r.json();
+      alert('Top similar:\n' + (j.neighbors || []).map(n => `${n.id} (d=${Number(n.distance).toFixed(2)})\n${n.explanation}`).join('\n\n'));
+    }));
+
+    grid.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
+      const j = await r.json();
+      if (j.pdf) window.open(j.pdf, '_blank');
+    }));
+  }
+  if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
+  // Initial load
+  loadLibrary().catch(() => {});
   if (form && input && results) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      playClick();
       const files = input.files;
       if (!files || files.length === 0) return;
       const fd = new FormData();

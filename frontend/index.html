@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <!-- Icons -->
+    <div style="position:absolute; width:0; height:0; overflow:hidden">
+      <?xml version="1.0" encoding="UTF-8"?>
+    </div>
+    <object type="image/svg+xml" data="./icons.svg" style="position:absolute; width:0; height:0; overflow:hidden"></object>
     <!-- Splash overlay -->
     <div id="splash" role="status" aria-live="polite">
       <div class="splash-content">
@@ -25,6 +30,13 @@
       <div class="brand">
         <img class="brand-logo" src="/assets/ma-logo.png" alt="MuseAgent" />
         <div class="brand-title">MuseAgent</div>
+      </div>
+      <div class="header-actions">
+        <label class="toggle">
+          <input id="sound-toggle" type="checkbox" />
+          <span class="slider"></span>
+          <span class="label">Sound</span>
+        </label>
       </div>
     </header>
 
