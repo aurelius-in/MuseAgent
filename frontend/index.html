@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MuseAgent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="icon" href="/assets/ma-logo.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -34,7 +37,29 @@
         </form>
         <div id="results" style="margin-top:1rem"></div>
       </section>
+      <section class="card" style="margin-top:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+          <h2 style="margin:0">Library</h2>
+          <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+        </div>
+        <div id="grid" class="grid" style="margin-top:1rem"></div>
+      </section>
     </main>
+
+    <!-- Detail modal -->
+    <div id="detail" class="detail">
+      <div class="detail-inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <h3 id="detail-title" style="margin:0"></h3>
+          <button id="detail-close">Close</button>
+        </div>
+        <div id="detail-meta" class="muted" style="margin-bottom:.75rem"></div>
+        <div class="charts">
+          <canvas id="chart-radar" width="420" height="320"></canvas>
+          <canvas id="chart-chroma" width="420" height="320"></canvas>
+        </div>
+      </div>
+    </div>
 
     <script src="./app.js"></script>
   </body>

@@ -22,6 +22,7 @@ def create_app() -> FastAPI:
     # Serve static frontend under /ui and assets under /assets
     app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
     app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+    app.mount("/data", StaticFiles(directory="museagent/backend/data"), name="data")
     app.mount("/reports", StaticFiles(directory="museagent/backend/reports"), name="reports")
 
     @app.get("/")
