@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from .config.settings import settings
 
 try:
     from .api.v1 import router as api_v1
@@ -34,6 +35,20 @@ def create_app() -> FastAPI:
     @app.get("/")
     def root_redirect():
         return RedirectResponse(url="/ui/")
+
+    # Optional API key enforcement via dependency (simple demo)
+    if settings.REQUIRE_API_KEY and settings.API_KEY:
+        from fastapi import Request, HTTPException
+
+        @app.middleware("http")
+        async def api_key_guard(request: "Request", call_next):
+            # Allow static and health without key
+            if request.url.path.startswith(("/ui", "/assets", "/data", "/reports", "/healthz", "/readyz")):
+                return await call_next(request)
+            key = request.headers.get("x-api-key") or request.query_params.get("api_key")
+            if key != settings.API_KEY:
+                raise HTTPException(status_code=401, detail="Invalid API key")
+            return await call_next(request)
     return app
 
 
