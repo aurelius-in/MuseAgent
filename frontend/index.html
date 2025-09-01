@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="icon" href="/assets/ma-logo.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -31,31 +32,51 @@
         <img class="brand-logo" src="/assets/ma-logo.png" alt="MuseAgent" />
         <div class="brand-title">MuseAgent</div>
       </div>
+      <nav class="app-nav">
+        <a href="#analyze" id="tab-analyze" class="tab">Analyze</a>
+        <a href="#explore" id="tab-explore" class="tab">Explore</a>
+        <a href="#reports" id="tab-reports" class="tab">Reports</a>
+      </nav>
       <div class="header-actions">
         <label class="toggle">
           <input id="sound-toggle" type="checkbox" />
           <span class="slider"></span>
           <span class="label">Sound</span>
         </label>
+        <label class="toggle">
+          <input id="offline-toggle" type="checkbox" checked />
+          <span class="slider"></span>
+          <span class="label">Offline</span>
+        </label>
       </div>
     </header>
 
     <main>
-      <section class="card">
-        <h2 style="margin-top:0">Analyze Tracks</h2>
-        <form id="upload-form">
-          <input id="file-input" type="file" multiple accept="audio/*" />
-          <button id="analyze-btn" type="submit">Analyze</button>
-        </form>
-        <div id="results" style="margin-top:1rem"></div>
-      </section>
-      <section class="card" style="margin-top:1rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
-          <h2 style="margin:0">Library</h2>
-          <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
-        </div>
-        <div id="grid" class="grid" style="margin-top:1rem"></div>
-      </section>
+      <div id="panel-analyze" class="panel active">
+        <section class="card">
+          <h2 style="margin-top:0">Analyze Tracks</h2>
+          <form id="upload-form">
+            <input id="file-input" type="file" multiple accept="audio/*" />
+            <button id="analyze-btn" type="submit">Analyze</button>
+          </form>
+          <div id="results" style="margin-top:1rem"></div>
+        </section>
+      </div>
+      <div id="panel-explore" class="panel">
+        <section class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <h2 style="margin:0">Library</h2>
+            <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+          </div>
+          <div id="grid" class="grid" style="margin-top:1rem"></div>
+        </section>
+      </div>
+      <div id="panel-reports" class="panel">
+        <section class="card">
+          <h2 style="margin-top:0">Reports</h2>
+          <div id="reports-list" class="grid"></div>
+        </section>
+      </div>
     </main>
 
     <!-- Detail modal -->
@@ -74,6 +95,19 @@
     </div>
 
     <script src="./app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+      // Default to offline mode on first load
+      try {
+        const stored = localStorage.getItem('ma-offline');
+        const offline = stored === null ? '1' : stored;
+        const toggle = document.getElementById('offline-toggle');
+        if (toggle) toggle.checked = offline === '1';
+        toggle?.addEventListener('change', () => localStorage.setItem('ma-offline', toggle.checked ? '1' : '0'));
+      } catch (e) {}
+    </script>
   </body>
   </html>
 

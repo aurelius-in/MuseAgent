@@ -1,0 +1,10 @@
+{
+  "name": "MuseAgent",
+  "short_name": "MuseAgent",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1E0E2C",
+  "theme_color": "#1E0E2C",
+  "icons": []
+}
+
