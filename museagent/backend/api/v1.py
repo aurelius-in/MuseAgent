@@ -10,6 +10,7 @@ from ..agents import report_agent as rep
 import os
 import time
 from ..utils.library import load_library, save_library
+from ..utils.exporter import export_json, export_csv
 
 router = APIRouter()
 
@@ -121,5 +122,16 @@ def report(payload: dict):
 @router.get("/library")
 def library():
     return {"tracks": list(TRACKS.values())}
+
+
+@router.get("/export")
+def export(fmt: str = "json"):
+    if fmt == "csv":
+        path = export_csv(TRACKS)
+    else:
+        path = export_json(TRACKS)
+    # Return web path if under data
+    rel = os.path.relpath(path, "museagent/backend/data").replace("\\", "/")
+    return {"path": f"/data/{rel}"}
 
 
