@@ -1,0 +1,48 @@
+:root {
+  --ma-bg: #1E0E2C;        /* dark purple from logo background */
+  --ma-surface: #231536;   /* slightly lighter surface */
+  --ma-fg: #F2D460;        /* primary accent (light yellow) */
+  --ma-fg-2: #FFE48F;      /* secondary accent */
+  --ma-text: #EAE7F2;      /* light text */
+  --ma-muted: #9B8CB5;     /* muted purple-grey */
+  --ma-accent-cool: #6A8F8B; /* consistent blue-green-grey accent */
+}
+
+/* Optional system font stack for crisp UI */
+@font-face {
+  font-family: system-ui;
+  src: local("Segoe UI"), local("Inter"), local("Helvetica Neue"), local("Arial");
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ma-bg);
+  color: var(--ma-text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: var(--ma-fg-2); text-decoration: none; }
+a:hover { color: var(--ma-fg); }
+
+button {
+  background: transparent;
+  color: var(--ma-fg);
+  border: 2px solid var(--ma-fg);
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+button:hover { border-color: var(--ma-fg-2); color: var(--ma-fg-2); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Utility tokens */
+.surface { background: var(--ma-surface); border: 1px solid #2c1c40; }
+.muted { color: var(--ma-muted); }
+.cool-accent { color: var(--ma-accent-cool); }
+
+
