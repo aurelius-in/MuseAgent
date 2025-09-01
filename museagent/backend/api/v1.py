@@ -8,6 +8,7 @@ from ..agents import tagging_agent as tag
 from ..agents import recommendation_agent as rec
 from ..agents import report_agent as rep
 import os
+import time
 from ..utils.library import load_library, save_library
 
 router = APIRouter()
@@ -28,10 +29,12 @@ def readyz():
 
 TRACKS = load_library()
 INDEX = emb.EmbeddingIndex(dim=1024)
+METRICS = {"requests": 0, "latency_ms": [], "analyze_count": 0}
 
 
 @router.post("/analyze")
 async def analyze(files: List[UploadFile] = File(...)):
+    start = time.time(); METRICS["requests"] += 1
     results = []
     for f in files:
         wav_path, dur, wave_png, spec_png, tid = await ing.load_audio(f)
@@ -53,6 +56,8 @@ async def analyze(files: List[UploadFile] = File(...)):
         }
         TRACKS[tid] = item
         results.append(item)
+    METRICS["analyze_count"] += len(results)
+    METRICS["latency_ms"].append(int((time.time() - start) * 1000))
     save_library(TRACKS)
     return {"tracks": results}
 
@@ -63,6 +68,26 @@ def warm_start() -> None:
     except Exception:
         # Fallback to lazy behavior if rebuild fails
         pass
+
+
+@router.get("/metrics")
+def metrics():
+    p50 = _percentile(METRICS["latency_ms"], 50)
+    p90 = _percentile(METRICS["latency_ms"], 90)
+    p99 = _percentile(METRICS["latency_ms"], 99)
+    return {
+        "requests": METRICS["requests"],
+        "analyze_count": METRICS["analyze_count"],
+        "latency_ms": {"p50": p50, "p90": p90, "p99": p99},
+    }
+
+
+def _percentile(values, p):
+    if not values:
+        return 0
+    s = sorted(values)
+    k = max(0, min(len(s) - 1, int(round((p/100.0) * (len(s)-1)))))
+    return s[k]
 
 
 @router.get("/similar")
