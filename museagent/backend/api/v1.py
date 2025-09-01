@@ -20,7 +20,10 @@ def healthz():
 
 @router.get("/readyz")
 def readyz():
-    return {"ready": True}
+    # Consider FAISS or fallback memory index readiness
+    ntotal = getattr(INDEX._faiss_index, "ntotal", None) if hasattr(INDEX, "_faiss_index") else None
+    vec_count = len(os.listdir(os.path.join("museagent", "backend", "embeddings", "vectors"))) if os.path.exists(os.path.join("museagent", "backend", "embeddings", "vectors")) else 0
+    return {"ready": True, "faiss_ntotal": ntotal, "vectors": vec_count}
 
 
 TRACKS = load_library()
@@ -52,6 +55,14 @@ async def analyze(files: List[UploadFile] = File(...)):
         results.append(item)
     save_library(TRACKS)
     return {"tracks": results}
+
+
+def warm_start() -> None:
+    try:
+        INDEX.rebuild()
+    except Exception:
+        # Fallback to lazy behavior if rebuild fails
+        pass
 
 
 @router.get("/similar")

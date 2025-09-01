@@ -19,6 +19,12 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(api_v1, prefix="/")
+    # Warm-start background: rebuild embedding index
+    try:
+        from .api.v1 import warm_start  # type: ignore
+        warm_start()
+    except Exception:
+        pass
     # Serve static frontend under /ui and assets under /assets
     app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
     app.mount("/assets", StaticFiles(directory="assets"), name="assets")
