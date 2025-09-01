@@ -7,6 +7,7 @@ from ..agents import embedding_agent as emb
 from ..agents import tagging_agent as tag
 from ..agents import recommendation_agent as rec
 from ..agents import report_agent as rep
+from ..utils.library import load_library, save_library
 
 router = APIRouter()
 
@@ -21,7 +22,7 @@ def readyz():
     return {"ready": True}
 
 
-TRACKS = {}
+TRACKS = load_library()
 INDEX = emb.EmbeddingIndex(dim=1024)
 
 
@@ -45,6 +46,7 @@ async def analyze(files: List[UploadFile] = File(...)):
         }
         TRACKS[tid] = item
         results.append(item)
+    save_library(TRACKS)
     return {"tracks": results}
 
 

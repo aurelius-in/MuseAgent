@@ -69,4 +69,73 @@ main {
 /* State after splash */
 body.ready #splash { opacity: 0; pointer-events: none; }
 
+/* Dashboard grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.badge-primary { color: var(--ma-bg); background: var(--ma-fg); border-color: var(--ma-fg); }
+.badge-muted { color: var(--ma-text); border-color: rgba(255,255,255,0.12); }
+
+/* Detail panel */
+.detail {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+.detail.show { display: flex; }
+.detail-inner {
+  width: min(920px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: 16px;
+  background: var(--ma-surface);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+canvas { background: rgba(255,255,255,0.03); border-radius: 12px; }
+
+/* Background aurora waves */
+body::before {
+  content: "";
+  position: fixed; inset: -10% -10% auto -10%; height: 60vh;
+  background: radial-gradient(60% 60% at 20% 20%, rgba(242,212,96,0.15), transparent),
+              radial-gradient(50% 50% at 80% 30%, rgba(106,143,139,0.18), transparent),
+              radial-gradient(45% 45% at 50% 80%, rgba(155,140,181,0.12), transparent);
+  filter: blur(40px);
+  pointer-events: none; z-index: 0;
+}
+
+/* Buttons with subtle glow */
+button {
+  position: relative;
+  box-shadow: 0 0 0 rgba(242,212,96,0);
+}
+button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
+
+/* Logo pulse tint every 10s for 1s */
+@keyframes logoPulse {
+  0%, 89% { filter: none; }
+  90%, 99% { filter: hue-rotate(-18deg) saturate(1.1) brightness(0.9); }
+  100% { filter: none; }
+}
+.splash-logo, .brand-logo { animation: logoPulse 10s infinite; }
+
+/* Card hover */
+.card { transition: transform 180ms ease, box-shadow 180ms ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+
 
