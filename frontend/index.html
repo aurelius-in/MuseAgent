@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="icon" href="/assets/ma-logo.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -94,6 +95,19 @@
     </div>
 
     <script src="./app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+      // Default to offline mode on first load
+      try {
+        const stored = localStorage.getItem('ma-offline');
+        const offline = stored === null ? '1' : stored;
+        const toggle = document.getElementById('offline-toggle');
+        if (toggle) toggle.checked = offline === '1';
+        toggle?.addEventListener('change', () => localStorage.setItem('ma-offline', toggle.checked ? '1' : '0'));
+      } catch (e) {}
+    </script>
   </body>
   </html>
 
