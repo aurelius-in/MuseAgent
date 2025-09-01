@@ -35,12 +35,12 @@ def _save_spec_png(y: np.ndarray, sr: int, out_png: str) -> None:
     plt.close()
 
 
-async def load_audio(file: UploadFile, target_sr: int = 16000) -> Tuple[str, float]:
+async def load_audio(file: UploadFile, target_sr: int = 16000) -> Tuple[str, float, str, str]:
     """Decode, resample to mono target_sr, trim silence, normalize, and cache WAV+PNGs.
 
     Returns
     -------
-    (normalized_wav_path, duration_sec)
+    (normalized_wav_path, duration_sec, wave_png_path, spec_png_path)
     """
     cache_root = _ensure_dirs()
     raw_bytes = await file.read()
@@ -77,6 +77,6 @@ async def load_audio(file: UploadFile, target_sr: int = 16000) -> Tuple[str, flo
     _save_wave_png(y, target_sr, wave_png)
     _save_spec_png(y, target_sr, spec_png)
 
-    return wav_path, duration_sec
+    return wav_path, duration_sec, wave_png, spec_png
 
 

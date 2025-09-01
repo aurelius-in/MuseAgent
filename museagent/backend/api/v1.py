@@ -16,6 +16,11 @@ def healthz():
     return {"ok": True}
 
 
+@router.get("/readyz")
+def readyz():
+    return {"ready": True}
+
+
 TRACKS = {}
 INDEX = emb.EmbeddingIndex(dim=1024)
 
@@ -24,7 +29,7 @@ INDEX = emb.EmbeddingIndex(dim=1024)
 async def analyze(files: List[UploadFile] = File(...)):
     results = []
     for f in files:
-        wav_path, dur = await ing.load_audio(f)
+        wav_path, dur, wave_png, spec_png = await ing.load_audio(f)
         fdict = feat.extract_features(wav_path)
         vec, tid = emb.embed_from_file(wav_path)
         INDEX.add(tid, vec)
@@ -36,6 +41,7 @@ async def analyze(files: List[UploadFile] = File(...)):
             **fdict,
             "embedding_dim": len(vec),
             "tags": tags,
+            "spectrogram_png": spec_png,
         }
         TRACKS[tid] = item
         results.append(item)
