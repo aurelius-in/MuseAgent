@@ -29,9 +29,9 @@ INDEX = emb.EmbeddingIndex(dim=1024)
 async def analyze(files: List[UploadFile] = File(...)):
     results = []
     for f in files:
-        wav_path, dur, wave_png, spec_png = await ing.load_audio(f)
+        wav_path, dur, wave_png, spec_png, tid = await ing.load_audio(f)
         fdict = feat.extract_features(wav_path)
-        vec, tid = emb.embed_from_file(wav_path)
+        vec, _ = emb.embed_from_file(wav_path)
         INDEX.add(tid, vec)
         tags = tag.tag_from_features(fdict, vec)
         item = {

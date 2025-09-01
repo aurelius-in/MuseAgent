@@ -47,10 +47,21 @@ document.addEventListener('DOMContentLoaded', () => {
           `<div class="muted">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
           (t.spectrogram_png ? `<img src="/${t.spectrogram_png.replace(/^\/+/, '')}" alt="spec" style="width:320px;max-width:100%;margin-top:.5rem;border-radius:8px"/>` : '')+
           `<div class="controls" style="margin-top:.5rem">`+
+          `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
           `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
           `</div>`+
           `</div>`
         )).join('');
+
+        // Bind similar buttons
+        for (const btn of results.querySelectorAll('.similar-btn')) {
+          btn.addEventListener('click', async (ev) => {
+            const tid = ev.currentTarget.getAttribute('data-tid');
+            const r = await fetch(`/similar?track_id=${encodeURIComponent(tid)}&k=3`);
+            const j = await r.json();
+            alert('Top similar:\n' + (j.neighbors || []).map(n => `${n.id} (d=${n.distance.toFixed(2)})\n${n.explanation}`).join('\n\n'));
+          });
+        }
 
         // Bind report buttons
         for (const btn of results.querySelectorAll('.report-btn')) {
