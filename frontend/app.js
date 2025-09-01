@@ -32,6 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const grid = document.getElementById('grid');
   const reloadLib = document.getElementById('reload-lib');
   const soundToggle = document.getElementById('sound-toggle');
+  const offlineToggle = document.getElementById('offline-toggle');
+  const tabAnalyze = document.getElementById('tab-analyze');
+  const tabExplore = document.getElementById('tab-explore');
+  const tabReports = document.getElementById('tab-reports');
+  const panelAnalyze = document.getElementById('panel-analyze');
+  const panelExplore = document.getElementById('panel-explore');
+  const panelReports = document.getElementById('panel-reports');
+  const reportsList = document.getElementById('reports-list');
   const detail = document.getElementById('detail');
   const detailTitle = document.getElementById('detail-title');
   const detailMeta = document.getElementById('detail-meta');
@@ -77,8 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadLibrary() {
     if (!grid) return;
     grid.innerHTML = '<span class="muted">Loading library...</span>';
-    const r = await fetch('/library');
-    const j = await r.json();
+    const j = await (async () => {
+      if (offlineToggle && offlineToggle.checked) {
+        const res = await fetch('./mock_data.json');
+        return res.json();
+      } else {
+        const res = await fetch('/library');
+        return res.json();
+      }
+    })();
     const tracks = j.tracks || [];
     grid.innerHTML = tracks.map(t => (
       `<div class="card">`+
@@ -123,6 +138,54 @@ document.addEventListener('DOMContentLoaded', () => {
   if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
   // Initial load
   loadLibrary().catch(() => {});
+
+  // Hash-based tabs
+  function setActiveTab(name) {
+    [tabAnalyze, tabExplore, tabReports].forEach(el => el && el.classList.remove('active'));
+    [panelAnalyze, panelExplore, panelReports].forEach(el => el && el.classList.remove('active'));
+    if (name === 'explore') { tabExplore?.classList.add('active'); panelExplore?.classList.add('active'); }
+    else if (name === 'reports') { tabReports?.classList.add('active'); panelReports?.classList.add('active'); renderReports(); }
+    else { tabAnalyze?.classList.add('active'); panelAnalyze?.classList.add('active'); }
+  }
+  function onHashChange() {
+    const name = (location.hash || '#analyze').replace('#','');
+    setActiveTab(name);
+  }
+  window.addEventListener('hashchange', onHashChange);
+  onHashChange();
+
+  async function renderReports() {
+    if (!reportsList) return;
+    const j = await (async () => {
+      if (offlineToggle && offlineToggle.checked) {
+        const res = await fetch('./mock_data.json');
+        return res.json();
+      } else {
+        const res = await fetch('/library');
+        return res.json();
+      }
+    })();
+    const tracks = j.tracks || [];
+    reportsList.innerHTML = tracks.slice(0, 12).map(t => (
+      `<div class="card">`+
+      `<div style="display:flex;align-items:center;gap:.5rem">`
+      `<svg width="20" height="20"><use href="./icons.svg#icon-note"/></svg>`+
+      `<div style="font-weight:600">${t.filename}</div>`+
+      `</div>`+
+      `<div class="muted" style="font-size:.9rem">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
+      `<div class="controls" style="margin-top:.5rem">`+
+      `<button data-tid="${t.id}" class="report-btn">Open PDF</button>`+
+      `</div>`+
+      `</div>`
+    )).join('');
+    reportsList.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
+      const j = await r.json();
+      if (j.pdf) window.open(j.pdf, '_blank');
+    }));
+  }
   if (form && input && results) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

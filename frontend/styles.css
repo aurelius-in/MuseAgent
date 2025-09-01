@@ -149,4 +149,12 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .toggle input:checked + .slider::after { transform: translateX(20px); }
 .toggle .label { color: var(--ma-text); font-size:.9rem; }
 
+.app-nav { display:flex; gap:.5rem; margin-left: .5rem; }
+.tab { padding: .4rem .8rem; border-radius: 999px; border:1px solid rgba(255,255,255,0.12); color: var(--ma-text); }
+.tab:hover { border-color: var(--ma-fg); color: var(--ma-fg); }
+.tab.active { background: var(--ma-fg); color: var(--ma-bg); border-color: var(--ma-fg); }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
 
