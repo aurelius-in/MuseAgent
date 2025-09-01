@@ -6,6 +6,9 @@ const ASSETS = [
   './animations.css',
   './app.js',
   './charts.js',
+  './pagination.js',
+  './offline.js',
+  './heatmap.js'
   './icons.svg',
   './mock_data.json'
 ];

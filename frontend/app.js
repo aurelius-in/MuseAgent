@@ -36,9 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
   const tabReports = document.getElementById('tab-reports');
+  const tabMore = document.getElementById('tab-more');
   const panelAnalyze = document.getElementById('panel-analyze');
   const panelExplore = document.getElementById('panel-explore');
   const panelReports = document.getElementById('panel-reports');
+  const panelMore = document.getElementById('panel-more');
   const reportsList = document.getElementById('reports-list');
   const detail = document.getElementById('detail');
   const detailTitle = document.getElementById('detail-title');
@@ -83,9 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
 
-  async function loadLibrary() {
+  async function loadLibrary(page=1) {
     if (!grid) return;
-    grid.innerHTML = '<span class="muted">Loading library...</span>';
+    grid.innerHTML = '<div class="skeleton" style="height:140px"></div>';
     const j = await (async () => {
       if (offlineToggle && offlineToggle.checked) {
         const res = await fetch('./mock_data.json');
@@ -97,7 +99,13 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
     const tracks = j.tracks || [];
     lastLibrary = tracks;
-    grid.innerHTML = tracks.map(t => (
+    // pagination state
+    let pageState = { page, pages: 1, total: tracks.length, slice: tracks };
+    try {
+      const mod = await import('./pagination.js');
+      pageState = mod.paginate(tracks, page, 8);
+    } catch(_) {}
+    grid.innerHTML = pageState.slice.map(t => (
       `<div class="card">`+
       (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:100%;height:120px;object-fit:cover;border-radius:10px"/>` : '')+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
@@ -112,6 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
       `</div>`+
       `</div>`
     )).join('');
+    // render pager
+    const pager = document.getElementById('pager');
+    try {
+      const mod = await import('./pagination.js');
+      mod.renderPager(pager, pageState, (p)=> loadLibrary(p));
+    } catch(_) {}
 
     // Bind actions
     grid.querySelectorAll('.detail-btn').forEach(btn => btn.addEventListener('click', (ev) => {
@@ -151,10 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Hash-based tabs
   function setActiveTab(name) {
-    [tabAnalyze, tabExplore, tabReports].forEach(el => el && el.classList.remove('active'));
-    [panelAnalyze, panelExplore, panelReports].forEach(el => el && el.classList.remove('active'));
-    if (name === 'explore') { tabExplore?.classList.add('active'); panelExplore?.classList.add('active'); }
-    else if (name === 'reports') { tabReports?.classList.add('active'); panelReports?.classList.add('active'); renderReports(); }
+    [tabAnalyze, tabExplore, tabReports, tabMore].forEach(el => el && el.classList.remove('active'));
+    [panelAnalyze, panelExplore, panelReports, panelMore].forEach(el => el && el.classList.remove('active'));
+    if (name === 'explore') { tabExplore?.classList.add('active'); panelExplore?.classList.add('active'); maybeSplit('explore'); }
+    else if (name === 'reports') { tabReports?.classList.add('active'); panelReports?.classList.add('active'); renderReports(); maybeSplit('reports'); }
+    else if (name === 'more') { tabMore?.classList.add('active'); panelMore?.classList.add('active'); }
     else { tabAnalyze?.classList.add('active'); panelAnalyze?.classList.add('active'); }
   }
   function onHashChange() {
@@ -197,6 +212,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   }
 
+  // If a panel overflows viewport notably, move overflow content to More tab
+  function maybeSplit(which){
+    try {
+      const panel = which === 'explore' ? panelExplore : panelReports;
+      const more = panelMore;
+      if (!panel || !more) return;
+      const tooTall = panel.scrollHeight > window.innerHeight * 1.5;
+      const moreTabVisible = tabMore && !tabMore.classList.contains('hidden');
+      if (tooTall && !moreTabVisible){
+        tabMore?.classList.remove('hidden');
+        // Move secondary grids to more
+        const moveIds = which === 'explore' ? ['grid'] : ['reports-list'];
+        moveIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el){
+            const placeholder = document.getElementById(id + '-more');
+            if (placeholder){ placeholder.innerHTML = el.outerHTML; el.innerHTML = ''; }
+          }
+        });
+      }
+    } catch(_){}
+  }
+
   // Similar modal with heatmap
   function l2(a,b){ let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ const d=(a[i]-b[i]); s+=d*d;} return Math.sqrt(s); }
   function showSimilarModal(items){
@@ -235,16 +273,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!files || files.length === 0) return;
       const fd = new FormData();
       for (const f of files) fd.append('files', f);
-      results.innerHTML = '<span class="muted">Analyzing...</span>';
+      results.innerHTML = '<div class="skeleton" style="height:80px"></div>';
       try {
-        const res = await fetch('/analyze', { method: 'POST', body: fd });
-        const json = await res.json();
+        const json = await (async ()=>{
+          if (offlineToggle && offlineToggle.checked){
+            const mod = await import('./offline.js');
+            return mod.analyzeMock(files);
+          } else {
+            const res = await fetch('/analyze', { method: 'POST', body: fd });
+            return res.json();
+          }
+        })();
         const items = json.tracks || [];
         results.innerHTML = items.map(t => (
           `<div class="card" style="margin-top:.5rem">`+
           `<div><b>${t.filename}</b></div>`+
           `<div class="muted">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
-          (t.spectrogram_png ? `<img src="/${t.spectrogram_png.replace(/^\/+/, '')}" alt="spec" style="width:320px;max-width:100%;margin-top:.5rem;border-radius:8px"/>` : '')+
+          (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:320px;max-width:100%;margin-top:.5rem;border-radius:8px"/>` : '')+
           `<div class="controls" style="margin-top:.5rem">`+
           `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
           `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
@@ -256,9 +301,16 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const btn of results.querySelectorAll('.similar-btn')) {
           btn.addEventListener('click', async (ev) => {
             const tid = ev.currentTarget.getAttribute('data-tid');
-            const r = await fetch(`/similar?track_id=${encodeURIComponent(tid)}&k=3`);
-            const j = await r.json();
-            alert('Top similar:\n' + (j.neighbors || []).map(n => `${n.id} (d=${n.distance.toFixed(2)})\n${n.explanation}`).join('\n\n'));
+            if (offlineToggle && offlineToggle.checked){
+              const ref = lastLibrary.find(x => x.id === tid) || lastLibrary[0];
+              const dists = lastLibrary.filter(x => x.id !== tid).map(x => ({ id: x.id, d: l2(ref.features.mfcc_mean, x.features.mfcc_mean), a: ref, b: x }));
+              dists.sort((a,b)=>a.d-b.d);
+              showSimilarModal(dists.slice(0,3));
+            } else {
+              const r = await fetch(`/similar?track_id=${encodeURIComponent(tid)}&k=3`);
+              const j = await r.json();
+              showSimilarModal((j.neighbors||[]).map(n => ({ id:n.id, d:n.distance, a:lastLibrary.find(x=>x.id===tid), b:lastLibrary.find(x=>x.id===n.id) })));
+            }
           });
         }
 
@@ -266,9 +318,12 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const btn of results.querySelectorAll('.report-btn')) {
           btn.addEventListener('click', async (ev) => {
             const tid = ev.currentTarget.getAttribute('data-tid');
-            const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
-            const j = await r.json();
-            if (j.pdf) window.open(j.pdf, '_blank');
+            if (offlineToggle && offlineToggle.checked){ alert('PDF reports are unavailable in offline demo.'); }
+            else {
+              const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
+              const j = await r.json();
+              if (j.pdf) window.open(j.pdf, '_blank');
+            }
           });
         }
       } catch (err) {
