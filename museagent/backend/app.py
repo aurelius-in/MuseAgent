@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 try:
@@ -17,6 +19,13 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(api_v1, prefix="/")
+    # Serve static frontend under /ui and assets under /assets
+    app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
+    app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+
+    @app.get("/")
+    def root_redirect():
+        return RedirectResponse(url="/ui/")
     return app
 
 
