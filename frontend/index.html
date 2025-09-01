@@ -27,15 +27,12 @@
 
     <main>
       <section class="card">
-        <h2 style="margin-top:0">Welcome</h2>
-        <p>
-          This is a branded shell aligned to the logo palette. Background, text, and controls
-          use <span class="cool-accent">consistent blue‑green‑grey</span> accents where appropriate.
-        </p>
-        <div class="controls">
-          <button>Primary</button>
-          <button style="border-color: var(--ma-accent-cool); color: var(--ma-accent-cool);">Cool Accent</button>
-        </div>
+        <h2 style="margin-top:0">Analyze Tracks</h2>
+        <form id="upload-form">
+          <input id="file-input" type="file" multiple accept="audio/*" />
+          <button id="analyze-btn" type="submit">Analyze</button>
+        </form>
+        <div id="results" style="margin-top:1rem"></div>
       </section>
     </main>
 

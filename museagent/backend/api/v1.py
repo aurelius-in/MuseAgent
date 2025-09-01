@@ -71,7 +71,9 @@ def report(payload: dict):
     if not tid or tid not in TRACKS:
         return {"pdf": None}
     path = rep.build_pdf(TRACKS[tid], logo_path="assets/ma-logo.png")
-    return {"pdf": path}
+    # Return a web path under /reports for the frontend
+    web_path = "/reports/" + path.split("/")[-1]
+    return {"pdf": web_path}
 
 
 @router.get("/library")
