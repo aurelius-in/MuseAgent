@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+
+# Data artifacts
+museagent/backend/data/cache/
+
+# Model weights
+museagent/backend/models/
+
+# Reports
+museagent/backend/reports/*.pdf
+
+# Embeddings
+museagent/backend/embeddings/index.faiss
+museagent/backend/embeddings/vectors/*.npy
