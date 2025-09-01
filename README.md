@@ -142,5 +142,5 @@ MIT License
 ## 👤 Author
 Oliver A. Ellison  
 Machine Learning Engineer – Music & Audio Domain  
-LinkedIn: [your-linkedin]  
+LinkedIn: https://www.linkedin.com/in/oellison/  
 Calendly: https://calendly.com/oliveraellison/15min  
