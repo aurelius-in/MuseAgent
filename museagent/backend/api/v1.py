@@ -7,6 +7,8 @@ from ..agents import embedding_agent as emb
 from ..agents import tagging_agent as tag
 from ..agents import recommendation_agent as rec
 from ..agents import report_agent as rep
+from ..agents import spotify_agent as spot
+from ..agents import generation_agent as gen
 import os
 import time
 from ..utils.library import load_library, save_library
@@ -34,7 +36,7 @@ METRICS = {"requests": 0, "latency_ms": [], "analyze_count": 0}
 
 
 @router.post("/analyze")
-async def analyze(files: List[UploadFile] = File(...)):
+async def analyze(files: List[UploadFile] = File(...), enrich: bool = False, generate: bool = False):
     start = time.time(); METRICS["requests"] += 1
     results = []
     for f in files:
@@ -46,6 +48,19 @@ async def analyze(files: List[UploadFile] = File(...)):
         # Normalize spectrogram path to web path under /data
         rel_spec = os.path.relpath(spec_png, "museagent/backend/data").replace("\\", "/")
         web_spec = f"/data/{rel_spec}"
+        artwork = None
+        if enrich:
+            try:
+                meta = spot.enrich_metadata(f.filename)
+                artwork = meta.get("artwork") if meta else None
+            except Exception:
+                artwork = None
+        loop_path = None
+        if generate:
+            try:
+                loop_path = gen.generate_loop(tags.get("mood"))
+            except Exception:
+                loop_path = None
         item = {
             "id": tid,
             "filename": f.filename,
@@ -54,6 +69,8 @@ async def analyze(files: List[UploadFile] = File(...)):
             "embedding_dim": len(vec),
             "tags": tags,
             "spectrogram_png": web_spec,
+            "artwork": artwork,
+            "loop": loop_path,
         }
         TRACKS[tid] = item
         results.append(item)
@@ -120,8 +137,13 @@ def report(payload: dict):
 
 
 @router.get("/library")
-def library():
-    return {"tracks": list(TRACKS.values())}
+def library(page: int = 1, per_page: int = 50):
+    vals = list(TRACKS.values())
+    per_page = max(1, min(200, per_page))
+    page = max(1, page)
+    start = (page - 1) * per_page
+    end = start + per_page
+    return {"tracks": vals[start:end], "page": page, "per_page": per_page, "total": len(vals)}
 
 
 @router.get("/export")
