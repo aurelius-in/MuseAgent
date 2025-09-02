@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('upload-form');
   const input = document.getElementById('file-input');
   const results = document.getElementById('results');
+  const dropzone = document.getElementById('dropzone');
   const grid = document.getElementById('grid');
   const reloadLib = document.getElementById('reload-lib');
   const soundToggle = document.getElementById('sound-toggle');
@@ -44,6 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const panelReports = document.getElementById('panel-reports');
   const panelMore = document.getElementById('panel-more');
   const reportsList = document.getElementById('reports-list');
+  // Explore filters
+  const filterKey = document.getElementById('filter-key');
+  const filterMood = document.getElementById('filter-mood');
+  const filterBpmEnabled = document.getElementById('filter-bpm-enabled');
+  const filterBpmMin = document.getElementById('filter-bpm-min');
+  const filterBpmMax = document.getElementById('filter-bpm-max');
+  const applyFilters = document.getElementById('apply-filters');
   const exportJsonBtn = document.getElementById('export-json');
   const exportCsvBtn = document.getElementById('export-csv');
   const toastEl = document.getElementById('toast');
@@ -53,6 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailClose = document.getElementById('detail-close');
   const chartRadar = document.getElementById('chart-radar');
   const chartChroma = document.getElementById('chart-chroma');
+  const analyzeRadar = document.getElementById('analyze-radar');
+  const analyzeChroma = document.getElementById('analyze-chroma');
+  // Chat elements
+  const chat = document.getElementById('chat');
+  const openChat = document.getElementById('open-chat');
+  const chatClose = document.getElementById('chat-close');
+  const chatLog = document.getElementById('chat-log');
+  const chatForm = document.getElementById('chat-form');
+  const chatText = document.getElementById('chat-text');
   let lastLibrary = [];
 
   // WebAudio: gentle click sound
@@ -89,6 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
     detail.classList.add('show');
   }
   if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
+  // Drag & drop analyze
+  if (dropzone && input) {
+    dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e)=>{ e.preventDefault(); dropzone.classList.remove('dragover'); input.files = e.dataTransfer.files; toast(`${input.files.length} file(s) ready`); });
+  }
 
   function toast(message) {
     if (!toastEl) return;
@@ -110,7 +133,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.json();
       }
     })();
-    const tracks = j.tracks || [];
+    let tracks = j.tracks || [];
+    // Apply client-side filters
+    try {
+      const keyVal = filterKey && filterKey.value || '';
+      const moodVal = filterMood && filterMood.value || '';
+      const bpmOn = filterBpmEnabled && filterBpmEnabled.checked;
+      const bpmMin = Number(filterBpmMin && filterBpmMin.value || 0) || 0;
+      const bpmMax = Number(filterBpmMax && filterBpmMax.value || 1000) || 1000;
+      tracks = tracks.filter(t => {
+        const okKey = !keyVal || t.key_guess === keyVal;
+        const okMood = !moodVal || (t.tags && t.tags.mood === moodVal);
+        const okBpm = !bpmOn || ((t.tempo_bpm||0) >= bpmMin && (t.tempo_bpm||0) <= bpmMax);
+        return okKey && okMood && okBpm;
+      });
+    } catch(_){}
     lastLibrary = tracks;
     // pagination state
     let pageState = { page, pages: 1, total: tracks.length, slice: tracks };
@@ -120,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_) {}
     grid.innerHTML = pageState.slice.map(t => (
       `<div class="card">`+
-      (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:100%;height:120px;object-fit:cover;border-radius:10px"/>` : '')+
+      `<div class="wave-anim"></div>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
       `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
@@ -129,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `<div class="controls" style="margin-top:.5rem">`+
       `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
       `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
-      `<button data-tid="${t.id}" class="report-btn">Report</button>`+
+      `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
       `</div>`+
       `</div>`
     )).join('');
@@ -173,8 +210,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   }
   if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
+  if (applyFilters) applyFilters.addEventListener('click', ()=> { playClick(); loadLibrary(1); });
   // Initial load
   loadLibrary().catch(() => {});
+
+  // Chat assistant wiring
+  function appendChat(role, text){
+    if (!chatLog) return;
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
+    div.textContent = String(text||'');
+    chatLog.appendChild(div);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+  if (openChat && chat) openChat.addEventListener('click', () => { chat.classList.add('show'); if (chatText) chatText.focus(); });
+  if (chatClose && chat) chatClose.addEventListener('click', () => chat.classList.remove('show'));
+  if (chatForm) chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = (chatText && chatText.value || '').trim();
+    if (!q) return;
+    appendChat('user', q); if (chatText) chatText.value = '';
+    try {
+      let reply;
+      if (offlineToggle && offlineToggle.checked){
+        // Offline: rule-based on current library
+        reply = offlineChat(q, lastLibrary);
+      } else {
+        const r = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: q }) });
+        const j = await r.json();
+        reply = j.reply || '...';
+      }
+      appendChat('bot', reply);
+    } catch(err){ appendChat('bot', 'Error answering your question.'); }
+  });
+
+  function offlineChat(q, tracks){
+    q = String(q||'').toLowerCase();
+    const avg = (xs)=> xs.length ? xs.reduce((a,b)=>a+b,0)/xs.length : 0;
+    if (!tracks || !tracks.length) return 'Library is empty in offline mode.';
+    if (q.includes('tempo') || q.includes('bpm')){
+      const vals = tracks.map(t=>Number(t.tempo_bpm||0)).filter(Boolean);
+      const a = avg(vals).toFixed(0);
+      const maxT = tracks.reduce((m,t)=> (t.tempo_bpm||0)>(m.tempo_bpm||0)?t:m, tracks[0]);
+      const minT = tracks.reduce((m,t)=> (t.tempo_bpm||0)<(m.tempo_bpm||0)?t:m, tracks[0]);
+      return `Average tempo ~${a} bpm. Fastest: ${maxT.filename} (${maxT.tempo_bpm} bpm). Slowest: ${minT.filename} (${minT.tempo_bpm} bpm).`;
+    }
+    if (q.includes('key')){
+      const counts = {}; tracks.forEach(t=>{ const k=t.key_guess; if(k) counts[k]=(counts[k]||0)+1; });
+      const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+      return top ? `Most common key is ${top[0]}.` : 'No key info available.';
+    }
+    if (q.includes('mood') || q.includes('genre') || q.includes('tag')){
+      const counts = {}; tracks.forEach(t=>{ const m=t.tags?.mood; if(m) counts[m]=(counts[m]||0)+1; });
+      const top3 = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([m,c])=>`${m} (${c})`).join(', ');
+      return top3 ? `Top moods: ${top3}.` : 'No mood tags yet.';
+    }
+    if (q.includes('recommend') || q.includes('similar') || q.includes('like')){
+      const base = tracks[0];
+      const dists = tracks.slice(1).map(x=>({ t:x, d:l2(base.features.mfcc_mean, x.features.mfcc_mean) })).sort((a,b)=>a.d-b.d).slice(0,3);
+      return dists.length ? `Try: ${dists.map(x=>x.t.filename).join(', ')}.` : 'Need more tracks to recommend.';
+    }
+    const vals = tracks.map(t=>Number(t.tempo_bpm||0)).filter(Boolean);
+    return `Library has ${tracks.length} track(s). Avg tempo ~${avg(vals).toFixed(0)} bpm. Ask about tempo, key, mood, or say recommend.`;
+  }
 
   // Hash-based tabs
   function setActiveTab(name) {
@@ -220,10 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const tracks = j.tracks || [];
     reportsList.innerHTML = tracks.slice(0, 12).map(t => (
       `<div class="card">`+
-      `<div style="display:flex;align-items:center;gap:.5rem">`
-      `<svg width="20" height="20"><use href="./icons.svg#icon-note"/></svg>`+
-      `<div style="font-weight:600">${t.filename}</div>`+
-      `</div>`+
+      (t.spectrogram_png ? `<img class=\"thumb\" src=\"${t.spectrogram_png}\" alt=\"thumb\"/>` : ``)+
+      `<div style="font-weight:600;margin-top:.35rem">${t.filename}</div>`+
       `<div class="muted" style="font-size:.9rem">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
       `<div class="controls" style="margin-top:.5rem">`+
       `<button data-tid="${t.id}" class="preview-btn">Preview</button>`+
@@ -378,6 +474,15 @@ document.addEventListener('DOMContentLoaded', () => {
           `</div>`+
           `</div>`
         )).join('');
+
+        try {
+          const mod = await import('./charts.js');
+          const first = items[0];
+          if (first) {
+            mod.drawRadar(analyzeRadar, first.features?.mfcc_mean || []);
+            mod.drawBars(analyzeChroma, first.features?.chroma_mean || []);
+          }
+        } catch(_){}
 
         // Bind similar buttons
         for (const btn of results.querySelectorAll('.similar-btn')) {

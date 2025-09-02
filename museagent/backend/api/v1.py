@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File
 from typing import List
+import re
 
 from ..agents import ingestion_agent as ing
 from ..agents import feature_agent as feat
@@ -156,4 +157,110 @@ def export(fmt: str = "json"):
     rel = os.path.relpath(path, "museagent/backend/data").replace("\\", "/")
     return {"path": f"/data/{rel}"}
 
+
+
+@router.post("/chat")
+def chat(payload: dict):
+    """Lightweight rule-based music Q&A over the current library or a specific track.
+    This is designed to work offline without external LLMs.
+    """
+    msg = str(payload.get("message") or "").strip()
+    if not msg:
+        return {"reply": "Ask me about tempo, key, mood, tags, or recommendations."}
+    q = msg.lower()
+    tid = payload.get("track_id")
+
+    def fmt_bpm(x):
+        try:
+            return f"{float(x):.0f} bpm"
+        except Exception:
+            return str(x)
+
+    tracks = list(TRACKS.values())
+    if not tracks:
+        return {"reply": "Your library is empty. Try analyzing a few tracks first."}
+
+    # Optional focus on a single track
+    t = TRACKS.get(tid) if tid else None
+
+    # Helpers
+    def avg(items):
+        vals = [float(x.get("tempo_bpm", 0)) for x in items if x.get("tempo_bpm")]
+        return sum(vals) / len(vals) if vals else 0.0
+
+    def top_key(items):
+        counts = {}
+        for x in items:
+            k = x.get("key_guess")
+            if k:
+                counts[k] = counts.get(k, 0) + 1
+        if not counts:
+            return None, 0
+        k, c = max(counts.items(), key=lambda kv: kv[1])
+        return k, c
+
+    def top_moods(items, n=3):
+        counts = {}
+        for x in items:
+            m = (x.get("tags") or {}).get("mood")
+            if m:
+                counts[m] = counts.get(m, 0) + 1
+        return sorted(counts.items(), key=lambda kv: kv[1], reverse=True)[:n]
+
+    # Intent detection
+    if any(w in q for w in ["tempo", "bpm", "speed"]):
+        if t:
+            tbpm = t.get("tempo_bpm")
+            conf = t.get("tempo_conf")
+            return {"reply": f"'{t.get('filename')}' is around {fmt_bpm(tbpm)} (confidence {conf:.2f} if available)."}
+        else:
+            a = avg(tracks)
+            fastest = max(tracks, key=lambda x: x.get("tempo_bpm", 0))
+            slowest = min(tracks, key=lambda x: x.get("tempo_bpm", 0))
+            return {"reply": f"Average tempo is {fmt_bpm(a)}. Fastest: {fastest.get('filename')} at {fmt_bpm(fastest.get('tempo_bpm'))}. Slowest: {slowest.get('filename')} at {fmt_bpm(slowest.get('tempo_bpm'))}."}
+
+    if "key" in q:
+        if t:
+            k = t.get("key_guess")
+            return {"reply": f"'{t.get('filename')}' appears to be in {k or 'an unknown key' }."}
+        k, c = top_key(tracks)
+        if not k:
+            return {"reply": "I couldn't infer keys yet. Analyze a few tracks first."}
+        return {"reply": f"Most common key is {k} across {c} track(s)."}
+
+    if any(w in q for w in ["mood", "genre", "tag"]):
+        if t:
+            mood = (t.get("tags") or {}).get("mood")
+            return {"reply": f"'{t.get('filename')}' mood tag: {mood or 'unknown'}."}
+        tops = top_moods(tracks)
+        if not tops:
+            return {"reply": "No mood tags yet. Analyze tracks to generate tags."}
+        summ = ", ".join([f"{m} ({c})" for m, c in tops])
+        return {"reply": f"Top moods: {summ}."}
+
+    if any(w in q for w in ["recommend", "similar", "nearest", "like"]):
+        base = t or (tracks[0] if tracks else None)
+        if not base:
+            return {"reply": "No reference track available for recommendations."}
+        try:
+            nbrs = INDEX.topk(base.get("id"), 3)
+            out = []
+            for nid, d in nbrs:
+                if nid == base.get("id"):
+                    continue
+                other = TRACKS.get(nid)
+                if other:
+                    out.append(f"{other.get('filename')} (d={float(d):.2f})")
+            if out:
+                return {"reply": f"You might like: {', '.join(out)}."}
+        except Exception:
+            pass
+        return {"reply": "I couldn't compute recommendations yet. Try analyzing more tracks first."}
+
+    # Fallback: simple stats
+    a = avg(tracks)
+    k, _ = top_key(tracks)
+    moods = top_moods(tracks)
+    mood_txt = ", ".join([m for m,_ in moods]) if moods else "unknown"
+    return {"reply": f"Library has {len(tracks)} track(s). Avg tempo {fmt_bpm(a)}. Common key {k or 'unknown'}. Top moods: {mood_txt}. Ask about tempo, key, mood, or say 'recommend'."}
 

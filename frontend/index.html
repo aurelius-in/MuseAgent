@@ -30,7 +30,6 @@
     <header class="app-header">
       <div class="brand">
         <img class="brand-logo" src="/assets/ma-logo.png" alt="MuseAgent" />
-        <div class="brand-title">MuseAgent</div>
       </div>
       <nav class="app-nav" role="tablist" aria-label="Primary">
         <a href="#analyze" id="tab-analyze" class="tab" role="tab" aria-selected="true" aria-controls="panel-analyze">Analyze</a>
@@ -49,6 +48,7 @@
           <span class="slider"></span>
           <span class="label">Offline</span>
         </label>
+        <button id="open-chat" title="Ask MuseAgent">Chat</button>
       </div>
     </header>
 
@@ -56,8 +56,8 @@
       <div id="panel-analyze" class="panel active" role="tabpanel" aria-labelledby="tab-analyze">
         <section class="card">
           <h2 style="margin-top:0">Analyze Tracks</h2>
-          <form id="upload-form">
-            <input id="file-input" type="file" multiple accept="audio/*" />
+          <form id="upload-form" class="row">
+            <input id="file-input" type="file" multiple accept="audio/*,video/*,.mp3,.wav,.flac,.mp4,.m4a" />
             <label class="toggle" style="margin-left:.5rem">
               <input id="enrich-toggle" type="checkbox" />
               <span class="slider"></span>
@@ -70,14 +70,27 @@
             </label>
             <button id="analyze-btn" type="submit">Analyze</button>
           </form>
+          <div id="dropzone" class="dropzone" style="margin-top:.75rem">Drop audio/video files here to analyze</div>
           <div id="results" style="margin-top:1rem"></div>
+          <div id="analyze-widgets" class="charts" style="margin-top:1rem">
+            <canvas id="analyze-radar" width="420" height="320"></canvas>
+            <canvas id="analyze-chroma" width="420" height="320"></canvas>
+          </div>
         </section>
       </div>
       <div id="panel-explore" class="panel" role="tabpanel" aria-labelledby="tab-explore">
         <section class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
             <h2 style="margin:0">Library</h2>
-            <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+            <div class="row">
+              <select id="filter-key"><option value="">All Keys</option><option>C</option><option>G</option><option>D</option><option>A</option><option>E</option><option>F</option><option>Am</option><option>Em</option><option>Dm</option><option>Gm</option></select>
+              <select id="filter-mood"><option value="">All Moods</option><option>chill</option><option>energetic</option><option>happy</option><option>sad</option><option>dark</option></select>
+              <label class="toggle"><input id="filter-bpm-enabled" type="checkbox"/><span class="slider"></span><span class="label">BPM</span></label>
+              <input id="filter-bpm-min" type="number" placeholder="Min" style="width:70px"/>
+              <input id="filter-bpm-max" type="number" placeholder="Max" style="width:70px"/>
+              <button id="apply-filters">Apply</button>
+              <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+            </div>
           </div>
           <div id="grid" class="grid" style="margin-top:1rem"></div>
           <div id="pager" class="row" style="margin-top:.5rem"></div>
@@ -91,6 +104,10 @@
             <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
           </div>
           <div id="reports-list" class="grid"></div>
+          <div id="reports-widgets" class="charts" style="margin-top:1rem">
+            <canvas id="reports-dist" width="420" height="320"></canvas>
+            <canvas id="reports-keys" width="420" height="320"></canvas>
+          </div>
         </section>
       </div>
       <div id="panel-more" class="panel" role="tabpanel" aria-labelledby="tab-more">
@@ -120,6 +137,21 @@
 
     <!-- Toast container -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- Chat assistant -->
+    <div id="chat" class="chat">
+      <div class="chat-inner">
+        <div class="chat-header">
+          <div style="display:flex;align-items:center;gap:.5rem"><img src="/assets/ma-logo.png" alt="" style="height:24px;width:auto"/> MuseAgent Assistant</div>
+          <button id="chat-close">Close</button>
+        </div>
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+        <form id="chat-form" class="chat-input" autocomplete="off">
+          <input id="chat-text" type="text" placeholder="Ask about tempo, key, mood, or recommendations..." />
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </div>
 
     <script src="./app.js"></script>
     <script>

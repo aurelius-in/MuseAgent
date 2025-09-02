@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ma-bg);
+  background: #1D0632;
   z-index: 1000;
   transition: opacity 400ms ease;
 }
@@ -36,9 +36,9 @@ header.app-header {
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 0.75rem;
-  background: linear-gradient(180deg, rgba(35,21,54,0.9) 0%, rgba(35,21,54,0.4) 100%);
+  background: var(--ma-bg);
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(6px);
+  backdrop-filter: none;
 }
 .brand {
   display: flex;
@@ -73,7 +73,7 @@ body.ready #splash { opacity: 0; pointer-events: none; }
 /* Dashboard grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
 }
 @media (max-width: 480px) {
@@ -157,6 +157,34 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 
 /* Media scaling for inline images inside cards */
 .card img { display: block; width: 100%; height: auto; border-radius: 10px; }
+.thumb { width: 100%; height: 90px; object-fit: cover; border-radius: 10px; }
+
+/* Animated waveform placeholder */
+.wave-anim {
+  width: 100%;
+  height: 90px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(242,212,96,0.45) 0px,
+    rgba(242,212,96,0.45) 3px,
+    rgba(106,143,139,0.35) 3px,
+    rgba(106,143,139,0.35) 6px
+  );
+  background-size: 200% 100%;
+  animation: waveScroll 2.5s linear infinite;
+}
+@keyframes waveScroll { to { background-position: -200% 0; } }
+
+/* Analyze dropzone */
+.dropzone {
+  border: 2px dashed rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ma-muted);
+}
+.dropzone.dragover { border-color: var(--ma-fg); color: var(--ma-fg); background: rgba(255,255,255,0.03); }
 
 /* Skeleton loading */
 .skeleton { position: relative; overflow: hidden; background: rgba(255,255,255,0.06); border-radius: 10px; }
@@ -202,5 +230,18 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 
 .panel { display: none; }
 .panel.active { display: block; }
+
+
+/* Chat assistant */
+.chat { position: fixed; right: 16px; bottom: 16px; z-index: 1500; display:none; }
+.chat.show { display:block; }
+.chat-inner { width: min(420px, 92vw); height: 60vh; background: var(--ma-surface); border:1px solid rgba(255,255,255,0.12); border-radius: 14px; display:flex; flex-direction: column; overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+.chat-header { display:flex; align-items:center; justify-content:space-between; padding:.5rem .75rem; border-bottom:1px solid rgba(255,255,255,0.08); }
+.chat-log { flex: 1; overflow:auto; padding:.75rem; display:flex; flex-direction:column; gap:.5rem; }
+.chat-msg { padding:.5rem .7rem; border-radius: 10px; max-width: 85%; }
+.chat-msg.user { align-self: flex-end; background: rgba(242,212,96,0.18); color: var(--ma-text); }
+.chat-msg.bot { align-self: flex-start; background: rgba(255,255,255,0.06); color: var(--ma-text); }
+.chat-input { display:flex; gap:.5rem; padding:.5rem; border-top:1px solid rgba(255,255,255,0.08); }
+.chat-input input { flex:1; padding:.5rem .6rem; border-radius: 10px; border:1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.2); color: var(--ma-text); }
 
 
