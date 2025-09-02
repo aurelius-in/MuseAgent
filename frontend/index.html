@@ -48,6 +48,7 @@
           <span class="slider"></span>
           <span class="label">Offline</span>
         </label>
+        <button id="open-chat" title="Ask MuseAgent">Chat</button>
       </div>
     </header>
 
@@ -81,7 +82,15 @@
         <section class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
             <h2 style="margin:0">Library</h2>
-            <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+            <div class="row">
+              <select id="filter-key"><option value="">All Keys</option><option>C</option><option>G</option><option>D</option><option>A</option><option>E</option><option>F</option><option>Am</option><option>Em</option><option>Dm</option><option>Gm</option></select>
+              <select id="filter-mood"><option value="">All Moods</option><option>chill</option><option>energetic</option><option>happy</option><option>sad</option><option>dark</option></select>
+              <label class="toggle"><input id="filter-bpm-enabled" type="checkbox"/><span class="slider"></span><span class="label">BPM</span></label>
+              <input id="filter-bpm-min" type="number" placeholder="Min" style="width:70px"/>
+              <input id="filter-bpm-max" type="number" placeholder="Max" style="width:70px"/>
+              <button id="apply-filters">Apply</button>
+              <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+            </div>
           </div>
           <div id="grid" class="grid" style="margin-top:1rem"></div>
           <div id="pager" class="row" style="margin-top:.5rem"></div>
@@ -128,6 +137,21 @@
 
     <!-- Toast container -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- Chat assistant -->
+    <div id="chat" class="chat">
+      <div class="chat-inner">
+        <div class="chat-header">
+          <div style="display:flex;align-items:center;gap:.5rem"><img src="/assets/ma-logo.png" alt="" style="height:24px;width:auto"/> MuseAgent Assistant</div>
+          <button id="chat-close">Close</button>
+        </div>
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+        <form id="chat-form" class="chat-input" autocomplete="off">
+          <input id="chat-text" type="text" placeholder="Ask about tempo, key, mood, or recommendations..." />
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </div>
 
     <script src="./app.js"></script>
     <script>

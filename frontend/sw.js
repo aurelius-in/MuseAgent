@@ -8,7 +8,7 @@ const ASSETS = [
   './charts.js',
   './pagination.js',
   './offline.js',
-  './heatmap.js'
+  './heatmap.js',
   './icons.svg',
   './mock_data.json'
 ];
