@@ -52,6 +52,14 @@
           <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
           <button id="export-selected-csv" title="Export selected rows" style="border-color:var(--ma-fg);color:var(--ma-fg)">Export Selected</button>
         </div>
+        <div class="header-status" aria-label="Backend status" title="API status" style="margin-left:1rem;display:flex;align-items:center;gap:.6rem">
+          <span class="status-item"><span id="dot-health" class="status-dot"></span><span class="status-label">API</span></span>
+          <span class="status-item"><span id="dot-ready" class="status-dot"></span><span class="status-label">Index</span></span>
+          <span class="status-metrics" style="display:flex;align-items:center;gap:.25rem">
+            <canvas id="metrics-spark" width="120" height="24" aria-label="Latency"></canvas>
+            <span id="ntotal" class="muted"></span>
+          </span>
+        </div>
       </div>
     </header>
 
@@ -75,9 +83,9 @@
           </form>
           <div id="dropzone" class="dropzone" style="margin-top:.75rem">Drop audio/video files here to analyze</div>
           <div id="results" style="margin-top:1rem"></div>
-          <div id="analyze-widgets" class="charts" style="margin-top:1rem">
-            <canvas id="analyze-radar" width="420" height="320"></canvas>
-            <canvas id="analyze-chroma" width="420" height="320"></canvas>
+          <div id="analyze-widgets" class="charts" style="margin-top:1rem; display:none">
+            <canvas id="analyze-radar" width="300" height="220"></canvas>
+            <canvas id="analyze-chroma" width="300" height="220"></canvas>
           </div>
           <div class="card" style="margin-top:1rem">
             <h2 style="margin:0 0 .5rem 0">Tap Tempo & Metronome</h2>

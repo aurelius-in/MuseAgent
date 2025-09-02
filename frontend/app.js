@@ -82,6 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let playerIdx = 0; let playerTimer = null; let playing = false;
   const exportJsonBtn = document.getElementById('export-json');
   const exportCsvBtn = document.getElementById('export-csv');
+  const dotHealth = document.getElementById('dot-health');
+  const dotReady = document.getElementById('dot-ready');
+  const ntotalEl = document.getElementById('ntotal');
+  const spark = document.getElementById('metrics-spark');
   const toastEl = document.getElementById('toast');
   const detail = document.getElementById('detail');
   const detailTitle = document.getElementById('detail-title');
@@ -151,6 +155,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   [soundToggle, offlineToggle, enrichToggle, generateToggle].forEach(el => el && el.addEventListener('change', syncLabels));
   syncLabels();
+  // Status polling
+  async function refreshStatus(){
+    try {
+      const h = await fetch('/healthz').then(r=>r.json()).catch(()=>({ok:false}));
+      if (dotHealth) dotHealth.style.background = h.ok ? '#4caf50' : '#e53935';
+    } catch(_){}
+    try {
+      const r = await fetch('/readyz').then(r=>r.json()).catch(()=>({ready:false}));
+      if (dotReady) dotReady.style.background = r.ready ? '#4caf50' : '#e53935';
+      if (ntotalEl && typeof r.faiss_ntotal !== 'undefined' && r.faiss_ntotal !== null) ntotalEl.textContent = `ntotal ${r.faiss_ntotal}`;
+    } catch(_){}
+    try {
+      const m = await fetch('/metrics').then(r=>r.json()).catch(()=>null);
+      if (m && spark && spark.getContext){
+        const ctx = spark.getContext('2d');
+        ctx.clearRect(0,0,spark.width,spark.height);
+        const vals = [m.latency_ms?.p50||0, m.latency_ms?.p90||0, m.latency_ms?.p99||0];
+        const max = Math.max(1, ...vals);
+        ctx.fillStyle = 'rgba(242,212,96,0.6)';
+        vals.forEach((v,i)=>{ const h = Math.max(2, (v/max) * (spark.height-4)); ctx.fillRect(4 + i*38, spark.height - h - 2, 24, h); });
+      }
+    } catch(_){}
+  }
+  setInterval(refreshStatus, 5000);
+  refreshStatus();
   // Drag & drop analyze
   if (dropzone && input) {
     dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
@@ -207,7 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_) {}
     grid.innerHTML = pageState.slice.map((t,i) => (
       `<div class="card ${selectionMode?'selectable':''}" data-tid="${t.id}">`+
-      `<canvas class="wave-mini" width="320" height="56" data-seed="${(i+1)*17}"></canvas>`+
+      `<div class="eq-mini" aria-hidden="true">`+
+      `<span></span><span></span><span></span><span></span>`+
+      `<span></span><span></span><span></span><span></span>`+
+      `</div>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
       `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
@@ -216,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `<div class="controls" style="margin-top:.5rem">`+
       `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
       `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
-      `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
+      `<button data-tid="${t.id}" class="report-btn">Report (PDF)</button>`+
       `</div>`+
       `</div>`
     )).join('');
@@ -227,23 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mod.renderPager(pager, pageState, (p)=> loadLibrary(p));
     } catch(_) {}
 
-    // Draw mini waveforms
-    grid.querySelectorAll('.wave-mini').forEach((cv) => {
-      try {
-        const ctx = cv.getContext('2d');
-        const w = cv.width, h = cv.height; ctx.clearRect(0,0,w,h);
-        const seed = Number(cv.getAttribute('data-seed')||1);
-        ctx.strokeStyle = 'rgba(242,212,96,0.9)'; ctx.lineWidth = 2; ctx.beginPath();
-        const y0 = h/2; ctx.moveTo(0, y0);
-        for (let x=0; x<w; x++) {
-          const t = (x / w) * Math.PI * (3.5 + (seed%7)*0.2);
-          const amp = Math.sin(t) * 0.6 + Math.sin(t*0.37 + seed) * 0.4;
-          const y = y0 + amp * (h*0.28);
-          ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      } catch(_){ }
-    });
+    // No canvas waveform; using animated EQ bars
 
     // Bind actions
     if (selectionMode){
@@ -863,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
           (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:320px;max-width:100%;margin-top:.5rem;border-radius:8px"/>` : '')+
           `<div class="controls" style="margin-top:.5rem">`+
           `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
-          `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
+          `<button data-tid="${t.id}" class="report-btn">Report (PDF)</button>`+
           `</div>`+
           `</div>`
         )).join('');
