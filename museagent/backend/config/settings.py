@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Security
     API_KEY: Optional[str] = None
     REQUIRE_API_KEY: bool = False
+    # Rate limiting (demo-safe)
+    RATE_LIMIT_RPS: int = 8
+    RATE_LIMIT_BURST: int = 16
 
     class Config:
         env_file = ".env"

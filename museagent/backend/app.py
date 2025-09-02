@@ -3,6 +3,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .config.settings import settings
+import time
+from collections import defaultdict
 
 try:
     from .api.v1 import router as api_v1
@@ -48,6 +50,24 @@ def create_app() -> FastAPI:
             key = request.headers.get("x-api-key") or request.query_params.get("api_key")
             if key != settings.API_KEY:
                 raise HTTPException(status_code=401, detail="Invalid API key")
+            return await call_next(request)
+
+    # Simple in-process rate limiting per IP
+    ip_buckets = defaultdict(lambda: {"tokens": settings.RATE_LIMIT_BURST, "ts": time.time()})
+    @app.middleware("http")
+    async def rate_limit(request, call_next):
+        ip = request.client.host if request.client else "anon"
+        bucket = ip_buckets[ip]
+        now = time.time()
+        # refill
+        elapsed = now - bucket["ts"]
+        bucket["tokens"] = min(settings.RATE_LIMIT_BURST, bucket["tokens"] + elapsed * settings.RATE_LIMIT_RPS)
+        bucket["ts"] = now
+        if bucket["tokens"] < 1 and not request.url.path.startswith(("/ui","/assets","/data","/reports")):
+            from fastapi import Response
+            return Response("Too Many Requests", status_code=429)
+        else:
+            bucket["tokens"] -= 1
             return await call_next(request)
     return app
 
