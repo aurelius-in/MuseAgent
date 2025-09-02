@@ -186,6 +186,15 @@
       </div>
     </div>
 
+    <!-- Mini player -->
+    <div id="player" class="player" aria-label="Mini player" role="region">
+      <button id="player-prev" title="Previous">⏮</button>
+      <button id="player-play" title="Play/Pause">▶</button>
+      <button id="player-next" title="Next">⏭</button>
+      <div class="player-title" id="player-title">—</div>
+      <div class="player-progress" aria-label="Progress"><span id="player-bar"></span></div>
+    </div>
+
     <script src="./app.js"></script>
     <script>
       if ('serviceWorker' in navigator) {

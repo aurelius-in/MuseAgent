@@ -60,6 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const shortcuts = document.getElementById('shortcuts');
   const shortcutsClose = document.getElementById('shortcuts-close');
   const search = document.getElementById('search');
+  // Mini player controls
+  const player = document.getElementById('player');
+  const playerTitle = document.getElementById('player-title');
+  const playerBar = document.getElementById('player-bar');
+  const playerPlay = document.getElementById('player-play');
+  const playerPrev = document.getElementById('player-prev');
+  const playerNext = document.getElementById('player-next');
+  let playerIdx = 0; let playerTimer = null; let playing = false;
   const exportJsonBtn = document.getElementById('export-json');
   const exportCsvBtn = document.getElementById('export-csv');
   const toastEl = document.getElementById('toast');
@@ -172,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_) {}
     grid.innerHTML = pageState.slice.map((t,i) => (
       `<div class="card ${selectionMode?'selectable':''}" data-tid="${t.id}">`+
-      `<div class="wave-anim" style="animation-duration:${2 + (i%5)*0.3}s;opacity:${0.8 - (i%6)*0.05}"></div>`+
+      `<canvas class="wave-mini" width="320" height="56" data-seed="${(i+1)*17}"></canvas>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
       `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
@@ -191,6 +199,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const mod = await import('./pagination.js');
       mod.renderPager(pager, pageState, (p)=> loadLibrary(p));
     } catch(_) {}
+
+    // Draw mini waveforms
+    grid.querySelectorAll('.wave-mini').forEach((cv) => {
+      try {
+        const ctx = cv.getContext('2d');
+        const w = cv.width, h = cv.height; ctx.clearRect(0,0,w,h);
+        const seed = Number(cv.getAttribute('data-seed')||1);
+        ctx.strokeStyle = 'rgba(242,212,96,0.9)'; ctx.lineWidth = 2; ctx.beginPath();
+        const y0 = h/2; ctx.moveTo(0, y0);
+        for (let x=0; x<w; x++) {
+          const t = (x / w) * Math.PI * (3.5 + (seed%7)*0.2);
+          const amp = Math.sin(t) * 0.6 + Math.sin(t*0.37 + seed) * 0.4;
+          const y = y0 + amp * (h*0.28);
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      } catch(_){ }
+    });
 
     // Bind actions
     if (selectionMode){
@@ -305,6 +331,30 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.querySelector('#pl-close').addEventListener('click', ()=> modal.remove());
   });
 
+  // Mini player behavior (demo: cycles through visible list)
+  function setPlayer(idx){
+    const cards = Array.from(document.querySelectorAll('#grid .card'));
+    if (!cards.length) return;
+    playerIdx = (idx + cards.length) % cards.length;
+    const card = cards[playerIdx];
+    const tid = card.getAttribute('data-tid');
+    const t = lastLibrary.find(x=>x.id===tid) || lastLibrary[playerIdx] || {};
+    if (playerTitle) playerTitle.textContent = t.filename || '—';
+  }
+  function tick(){
+    if (!playing || !playerBar) return;
+    const num = parseFloat(playerBar.style.width || '0') || 0;
+    const next = (num + 1) % 100; playerBar.style.width = next + '%';
+  }
+  if (playerPlay) playerPlay.addEventListener('click', ()=>{
+    playing = !playing; playerPlay.textContent = playing ? '⏸' : '▶';
+    if (playerTimer) { clearInterval(playerTimer); playerTimer = null; }
+    if (playing) playerTimer = setInterval(tick, 200);
+  });
+  if (playerPrev) playerPrev.addEventListener('click', ()=>{ setPlayer(playerIdx-1); });
+  if (playerNext) playerNext.addEventListener('click', ()=>{ setPlayer(playerIdx+1); });
+  setPlayer(0);
+
   // Tone preview on detail key
   function playToneForKey(key){
     const map = {C:261.63,'C#':277.18,Db:277.18,D:293.66,'D#':311.13,Eb:311.13,E:329.63,F:349.23,'F#':369.99,Gb:369.99,G:392.00,'G#':415.30,Ab:415.30,A:440.00,'A#':466.16,Bb:466.16,B:493.88,Am:440.00,Em:329.63,Dm:293.66,Gm:392.00};
@@ -395,19 +445,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.addEventListener('hashchange', onHashChange);
   onHashChange();
-  // Keyboard nav for tabs and ESC to close modals
+  // Keyboard nav, selection, tagging, playlist, chat
   window.addEventListener('keydown', (e) => {
     const activeModal = document.querySelector('.detail.show');
     if (e.key === 'Escape' && activeModal) {
       activeModal.remove();
       return;
     }
-    if (!e.ctrlKey) return;
-    const tabs = ['analyze','explore','reports'];
-    const name = (location.hash || '#analyze').replace('#','');
-    const idx = tabs.indexOf(name);
-    if (e.key === 'ArrowRight') { const n = tabs[(idx+1)%tabs.length]; location.hash = '#' + n; }
-    if (e.key === 'ArrowLeft') { const n = tabs[(idx-1+tabs.length)%tabs.length]; location.hash = '#' + n; }
+    const targetTag = (e.target && e.target.tagName) || '';
+    const inInput = ['INPUT','TEXTAREA'].includes(targetTag);
+    // Tab navigation with Ctrl + arrows
+    if (e.ctrlKey) {
+      const tabs = ['analyze','explore','reports'];
+      const name = (location.hash || '#analyze').replace('#','');
+      const idx = tabs.indexOf(name);
+      if (e.key === 'ArrowRight') { const n = tabs[(idx+1)%tabs.length]; location.hash = '#' + n; }
+      if (e.key === 'ArrowLeft') { const n = tabs[(idx-1+tabs.length)%tabs.length]; location.hash = '#' + n; }
+      return;
+    }
+    if (inInput) return;
+    if (e.key.toLowerCase() === 's') { selectionMode = !selectionMode; toast(selectionMode? 'Selection ON' : 'Selection OFF'); loadLibrary(); }
+    if (e.key.toLowerCase() === 'a' && selectionMode) {
+      document.querySelectorAll('#grid .card').forEach(card=>{ const tid=card.getAttribute('data-tid'); selectedIds.add(tid); card.classList.add('selected'); });
+      toast('Selected all');
+    }
+    if (e.key.toLowerCase() === 't') { tagSelectedBtn?.click(); }
+    if (e.key.toLowerCase() === 'p') { smartPlaylistBtn?.click(); }
+    if (e.key === '/') { e.preventDefault(); openChat?.click(); }
   });
 
   async function renderReports() {
