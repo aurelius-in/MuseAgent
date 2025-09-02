@@ -81,6 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const chartChroma = document.getElementById('chart-chroma');
   const analyzeRadar = document.getElementById('analyze-radar');
   const analyzeChroma = document.getElementById('analyze-chroma');
+  // Agents and insights
+  const agentDance = document.getElementById('agent-dance');
+  const agentAmbient = document.getElementById('agent-ambient');
+  const agentSummarize = document.getElementById('agent-summarize');
+  const agentOutput = document.getElementById('agent-output');
+  const insightsList = document.getElementById('insights-list');
   // Chat elements
   const chat = document.getElementById('chat');
   const openChat = document.getElementById('open-chat');
@@ -422,6 +428,55 @@ document.addEventListener('DOMContentLoaded', () => {
   if (playerPrev) playerPrev.addEventListener('click', ()=>{ setPlayer(playerIdx-1); });
   if (playerNext) playerNext.addEventListener('click', ()=>{ setPlayer(playerIdx+1); });
   setPlayer(0);
+
+  // Lightweight agentic helpers (rule-based)
+  function renderList(selector, items){
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.innerHTML = items.map(s=>`<li>${s}</li>`).join('');
+  }
+  function summarizeLibrary(){
+    const n = lastLibrary.length;
+    const avgTempo = Math.round((lastLibrary.reduce((a,t)=>a+(t.tempo_bpm||0),0) / (n||1))||0);
+    const keys = {};
+    lastLibrary.forEach(t=>{ const k=t.key_guess; if(k) keys[k]=(keys[k]||0)+1; });
+    const topKey = Object.entries(keys).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'unknown';
+    const moods = {}; lastLibrary.forEach(t=>{ const m=t.tags?.mood; if(m) moods[m]=(moods[m]||0)+1; });
+    const topMoods = Object.entries(moods).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([m,c])=>`${m} (${c})`).join(', ');
+    return `Tracks: ${n}. Avg tempo: ${avgTempo} bpm. Common key: ${topKey}. Top moods: ${topMoods || 'n/a'}.`;
+  }
+  function pickDanceable(){
+    const ok = lastLibrary.filter(t => (t.tempo_bpm||0) >= 110 && (t.tempo_bpm||0) <= 135 && !/m$/.test(String(t.key_guess||'')));
+    return ok.slice(0, 15);
+  }
+  function pickAmbient(){
+    const ok = lastLibrary.filter(t => (t.tempo_bpm||0) <= 90 && (/m$/.test(String(t.key_guess||'')) || /chill|ambient|dark/i.test(String(t.tags?.mood||''))));
+    return ok.slice(0, 15);
+  }
+  function refreshInsights(){
+    const items = [];
+    if (lastLibrary.length){
+      const tempos = lastLibrary.map(t=>t.tempo_bpm||0).sort((a,b)=>a-b);
+      const mid = tempos[Math.floor(tempos.length/2)]||0;
+      items.push(`Median tempo: ${mid} bpm`);
+      const keys = {}; lastLibrary.forEach(t=>{ const k=t.key_guess; if(k) keys[k]=(keys[k]||0)+1; });
+      const rare = Object.entries(keys).sort((a,b)=>a[1]-b[1])[0]?.[0]; if (rare) items.push(`Rarest key: ${rare}`);
+      const moodCounts = {}; lastLibrary.forEach(t=>{ const m=t.tags?.mood; if(m) moodCounts[m]=(moodCounts[m]||0)+1; });
+      const topMood = Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]; if (topMood) items.push(`Dominant mood: ${topMood}`);
+    }
+    renderList('#insights-list', items);
+  }
+  if (agentDance) agentDance.addEventListener('click', ()=>{
+    const picks = pickDanceable();
+    agentOutput.textContent = picks.length ? `Danceable set (${picks.length}): `+picks.map(t=>t.filename).join(', ') : 'No suitable tracks found.';
+  });
+  if (agentAmbient) agentAmbient.addEventListener('click', ()=>{
+    const picks = pickAmbient();
+    agentOutput.textContent = picks.length ? `Ambient set (${picks.length}): `+picks.map(t=>t.filename).join(', ') : 'No suitable tracks found.';
+  });
+  if (agentSummarize) agentSummarize.addEventListener('click', ()=>{
+    agentOutput.textContent = summarizeLibrary();
+  });
 
   // Tone preview on detail key
   function playToneForKey(key){
