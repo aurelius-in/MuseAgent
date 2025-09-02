@@ -25,7 +25,7 @@
   height: auto;
   filter: drop-shadow(0 6px 32px rgba(0,0,0,0.45));
 }
-.splash-title { font-size: clamp(1.25rem, 3vmin, 2rem); color: var(--ma-fg); letter-spacing: 0.03em; }
+.splash-title { font-size: clamp(1.15rem, 2.6vmin, 1.8rem); color: var(--ma-fg); letter-spacing: 0.03em; }
 .splash-subtitle { color: var(--ma-muted); }
 
 /* App chrome */
@@ -70,6 +70,8 @@ main {
 }
 
 .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+/* Smaller agent buttons */
+.ai-agents .controls button { height: 32px; padding: 0 10px; font-size: 0.9rem; border-radius: 8px; }
 
 /* State after splash */
 body.ready #splash { opacity: 0; pointer-events: none; }
@@ -168,6 +170,37 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 /* Media scaling for inline images inside cards */
 .card img { display: block; width: 100%; height: auto; border-radius: 10px; }
 .thumb { width: 100%; height: 90px; object-fit: cover; border-radius: 10px; }
+.card textarea { width: 100%; border-radius: 10px; padding: .6rem .7rem; border:1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.2); color: var(--ma-text); resize: vertical; margin-top: 10px; }
+
+/* Generate panel inputs: use light grey-on-dark, bolder prompt */
+#panel-generate input[type="text"],
+#panel-generate input[type="number"],
+#panel-generate select,
+#panel-generate textarea {
+  background: rgba(255,255,255,0.12);
+  color: var(--ma-text);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+}
+#panel-generate option { background-color: var(--ma-bg); color: var(--ma-text); }
+#gen-lyrics-prompt { font-weight: 700; font-size: 1.05rem; }
+
+/* Generate: unify control heights and typography in the action row */
+#panel-generate form .row select,
+#panel-generate form .row button {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+#panel-generate form .row button {
+  background: rgba(255,255,255,0.12);
+  color: var(--ma-text);
+  border: 1px solid rgba(255,255,255,0.14);
+}
 
 /* Animated waveform placeholder */
 .wave-anim { display:none; }
@@ -228,15 +261,25 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 #map-canvas { width: 100%; height: auto; background: rgba(255,255,255,0.03); border-radius: 12px; }
 
 /* Insights layout */
-.insights-split { display:flex; gap:1rem; align-items:flex-start; }
-.insights-sidebar { width: 50%; max-height: 72vh; overflow:auto; border-right:1px solid rgba(255,255,255,0.08); padding-right:.5rem; }
-.insights-detail { width: 50%; }
+.insights-split { display:flex; gap:1rem; align-items:flex-start; height: 100%; min-height: 0; }
+.insights-sidebar { width: 50%; height: 100%; overflow:auto; border-right:1px solid rgba(255,255,255,0.08); padding-right:.5rem; }
+.insights-detail { width: 50%; height: 100%; overflow:auto; }
 .list .item { padding:.5rem .6rem; border-radius:10px; border:1px solid rgba(255,255,255,0.12); margin-bottom:.5rem; }
 .list .item h4 { margin:.1rem 0; }
 .list .item .controls { display:flex; gap:.4rem; margin-top:.4rem; }
 
+/* Make Insights panel occupy viewport height with internal scrolling */
+#panel-insights { height: calc(100vh - 112px); overflow: hidden; }
+#panel-insights > section.card { height: 100%; display: flex; flex-direction: column; }
+
+/* Analyze split layout: left tools, right Ask MuseAgent */
+.analyze-split { display:flex; gap:1rem; align-items:flex-start; }
+.analyze-left { width: 50%; }
+.analyze-right { width: 50%; }
+@media (max-width: 900px) { .analyze-split { flex-direction: column; } .analyze-left, .analyze-right { width: 100%; } }
+
 /* Explore filters: larger, bold dropdowns */
-#filter-key, #filter-mood {
+#filter-key, #filter-mood, #gen-genre, #gen-mood, #gen-key, #gen-language, #gen-rhyme, #gen-engine {
   font-size: 1rem;
   font-weight: 700;
   height: 38px;

@@ -137,6 +137,30 @@ def report(payload: dict):
     return {"pdf": web_path}
 
 
+@router.post("/generate")
+def generate(payload: dict):
+    """Generate music via MusicGen if available, else synth placeholder.
+
+    Expects JSON with: prompt, genre, mood, key, bpm, duration, creativity, seed
+    Returns: { path, web_path, meta, lyrics }
+    """
+    prompt = str(payload.get("prompt") or "")
+    genre = str(payload.get("genre") or "pop")
+    mood = str(payload.get("mood") or "happy")
+    key = str(payload.get("key") or "C")
+    bpm = int(payload.get("bpm") or 110)
+    duration = int(payload.get("duration") or 30)
+    creativity = float(payload.get("creativity") or 0.5)
+    seed = int(payload.get("seed") or 0)
+    engine = str(payload.get("engine") or "melody")
+    out = gen.generate_music(
+        prompt,
+        genre=genre, mood=mood, key=key,
+        bpm=bpm, duration=duration, creativity=creativity, seed=seed, engine=engine,
+    )
+    return out
+
+
 @router.get("/library")
 def library(page: int = 1, per_page: int = 50):
     vals = list(TRACKS.values())

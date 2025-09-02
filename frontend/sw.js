@@ -1,4 +1,4 @@
-const CACHE_NAME = 'museagent-cache-v9';
+const CACHE_NAME = 'museagent-cache-v12';
 const ASSETS = [
   './index.html',
   './styles.css',
