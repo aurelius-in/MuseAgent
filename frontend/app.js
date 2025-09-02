@@ -42,10 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const labelGenerate = document.getElementById('label-generate');
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
+  const tabInsights = document.getElementById('tab-insights');
   const tabReports = null;
   const tabMore = null;
   const panelAnalyze = document.getElementById('panel-analyze');
   const panelExplore = document.getElementById('panel-explore');
+  const panelInsights = document.getElementById('panel-insights');
   const panelReports = null;
   const panelMore = null;
   const reportsList = document.getElementById('reports-list');
@@ -80,8 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const playerPrev = document.getElementById('player-prev');
   const playerNext = document.getElementById('player-next');
   let playerIdx = 0; let playerTimer = null; let playing = false;
-  const exportJsonBtn = document.getElementById('export-json');
-  const exportCsvBtn = document.getElementById('export-csv');
+  const exportJsonBtn = null;
+  const exportCsvBtn = null;
   const dotHealth = document.getElementById('dot-health');
   const dotReady = document.getElementById('dot-ready');
   const ntotalEl = document.getElementById('ntotal');
@@ -155,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (labelGenerate && generateToggle) labelGenerate.textContent = generateToggle.checked ? 'Generate' : 'Static';
   }
   [soundToggle, offlineToggle, enrichToggle, generateToggle].forEach(el => el && el.addEventListener('change', syncLabels));
+  if (offlineToggle) offlineToggle.addEventListener('change', ()=>{ loadLibrary(1); });
   syncLabels();
   // Header export handlers (works both online/offline)
   if (exportJsonBtn) exportJsonBtn.onclick = async () => {
@@ -543,6 +546,133 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_){ }
   }
 
+  // Insights rendering with mock reports and smart detail
+  function renderInsights(){
+    const list = document.getElementById('insights-list');
+    const detail = document.getElementById('insight-detail');
+    if (!list || !detail) return;
+    const reports = [
+      { id:'one-dance', title:'One Dance — Drake (Smart Report)', artist:'Drake', actions:['pdf'] },
+      { id:'library-overview', title:'Library Overview', artist:'All Artists', actions:['pdf'] },
+      { id:'mood-trends', title:'Mood Trends (Last 30)', artist:'Aggregate', actions:['pdf'] },
+    ];
+    list.innerHTML = reports.map(r=> `
+      <div class="item" data-id="${r.id}">
+        <h4>${r.title}</h4>
+        <div class="controls">
+          <button data-act="pdf" data-id="${r.id}">Export PDF</button>
+        </div>
+      </div>`).join('');
+
+    function showDetail(id){
+      if (id === 'one-dance') {
+        detail.innerHTML = `
+          <div class="card">
+            <h3 style="margin:0 0 .25rem 0">One Dance — Drake</h3>
+            <div class="muted">Smart analysis powered by MuseAgent</div>
+            <div style="margin-top:.6rem;display:flex;justify-content:center">
+              <canvas id="ins-radar" width="420" height="300" style="max-width:100%"></canvas>
+            </div>
+            <div class="muted" style="text-align:center;margin-top:.25rem;font-size:.9rem">Feature Radar — danceability, energy, valence, acousticness, speechiness, instrumentalness, liveness</div>
+            <div style="margin-top:.6rem">
+              <h4>Summary</h4>
+              <p>One Dance blends dancehall, afrobeats, and house influences with a steady four-on-the-floor rhythm around ~104 bpm. Harmony centres on a minor tonal area with sparse voicings, syncopated keys, and a deep bass groove. Vocals use repetitive, hook-driven phrases and call‑and‑response textures.</p>
+              <h4>Chord Structure & Harmony</h4>
+              <ul>
+                <li>Key: B minor (relative D major colour in hooks)</li>
+                <li>Common loop: Bm – D – A – F#m (vi – I – V – iii in D)</li>
+                <li>Voicings: short, sustained synth pads; low‑passed keys; occasional suspensions</li>
+                <li>Bass: repetitive ostinato locking tight with kick pattern</li>
+              </ul>
+              <h4>Rhythm & Style</h4>
+              <ul>
+                <li>Tempo: ~104 bpm; swing‑lite offbeats; syncopated hats</li>
+                <li>Afrobeats/dancehall accents with modern pop/house production polish</li>
+              </ul>
+              <h4>AI Evaluations</h4>
+              <ul>
+                <li>Danceability: Very high — consistent groove and minimal harmonic friction</li>
+                <li>Energy: Moderate — emphasis on groove over aggression</li>
+                <li>Valence: Medium — minor harmony balanced by warm timbres</li>
+                <li>Hook Strength: High — repetitive melodic motifs and rhythm</li>
+              </ul>
+              <h4>Production Notes</h4>
+              <ul>
+                <li>Side‑chained bass/kick interaction; subtle saturation on low mids</li>
+                <li>Short plate/room reverbs; mono‑compatible percussion; wide pads</li>
+              </ul>
+            </div>
+            <div class="card" style="margin-top:.6rem">
+              <h4 style="margin:0 0 .25rem 0">Energy vs Valence (Mood Map)</h4>
+              <canvas id="ins-mood" width="560" height="280" style="width:100%;max-width:560px;display:block;margin:0 auto"></canvas>
+            </div>
+          </div>`;
+        try {
+          // Draw labeled radar with meaningful axes
+          const radarCanvas = document.getElementById('ins-radar');
+          const labels = ['Danceability','Energy','Valence','Acousticness','Speechiness','Instrumentalness','Liveness'];
+          const values = [0.9, 0.65, 0.55, 0.35, 0.08, 0.1, 0.2];
+          if (radarCanvas && radarCanvas.getContext){
+            const ctx = radarCanvas.getContext('2d');
+            const w = radarCanvas.width, h = radarCanvas.height; const cx = w/2, cy = h/2 + 10; const r = Math.min(w,h)*0.35;
+            ctx.clearRect(0,0,w,h);
+            ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.fillStyle = 'rgba(242,212,96,0.15)'; ctx.lineWidth = 1;
+            const N = labels.length;
+            // grid rings
+            for (let ring=1; ring<=4; ring++){
+              const rr = (r*ring)/4; ctx.beginPath(); for(let i=0;i<N;i++){ const a = -Math.PI/2 + (i/N)*Math.PI*2; const x = cx + rr*Math.cos(a); const y = cy + rr*Math.sin(a); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.closePath(); ctx.stroke();
+            }
+            // axes + labels
+            ctx.fillStyle = 'rgba(234,231,242,0.9)'; ctx.font = '12px Montserrat, sans-serif';
+            for (let i=0;i<N;i++){
+              const a = -Math.PI/2 + (i/N)*Math.PI*2; const x = cx + r*Math.cos(a); const y = cy + r*Math.sin(a);
+              ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.stroke();
+              const lx = cx + (r+18)*Math.cos(a); const ly = cy + (r+18)*Math.sin(a);
+              ctx.textAlign = Math.cos(a) > 0.2 ? 'left' : Math.cos(a) < -0.2 ? 'right' : 'center';
+              ctx.textBaseline = Math.abs(Math.sin(a)) < 0.2 ? 'middle' : (Math.sin(a) > 0 ? 'top' : 'alphabetic');
+              ctx.fillText(labels[i], lx, ly);
+            }
+            // polygon
+            ctx.beginPath();
+            for (let i=0;i<N;i++){
+              const a = -Math.PI/2 + (i/N)*Math.PI*2; const rr = r * Math.max(0, Math.min(1, values[i]));
+              const x = cx + rr*Math.cos(a); const y = cy + rr*Math.sin(a);
+              if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.closePath(); ctx.fillStyle = 'rgba(242,212,96,0.22)'; ctx.fill(); ctx.strokeStyle='rgba(242,212,96,0.8)'; ctx.stroke();
+          }
+          // Mood map at bottom
+          const mood = document.getElementById('ins-mood');
+          if (mood && mood.getContext){
+            const ctx = mood.getContext('2d'); const w=mood.width, h=mood.height; ctx.clearRect(0,0,w,h);
+            // axes
+            ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(w-20,h-30); ctx.stroke(); ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(40,20); ctx.stroke();
+            ctx.fillStyle='rgba(234,231,242,0.8)'; ctx.font='12px Montserrat,sans-serif'; ctx.fillText('Energy →', w-90, h-12);
+            ctx.save(); ctx.translate(18, 40); ctx.rotate(-Math.PI/2); ctx.fillText('Valence →', 0,0); ctx.restore();
+            // compute point from tempo & mode
+            const tempo = 104; const energy = Math.min(1, Math.max(0, tempo/200));
+            const isMinor = true; const valence = isMinor ? 0.45 : 0.7;
+            const x = 40 + energy * (w-60); const y = (h-30) - valence * (h-60);
+            ctx.fillStyle='rgba(242,212,96,0.9)'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+          }
+        } catch(_) {}
+      } else if (id === 'library-overview') {
+        detail.innerHTML = `<div class="card"><h3 style="margin:0 0 .25rem 0">Library Overview</h3><p class="muted">Top keys, moods, and tempo distribution across your library.</p></div>`;
+      } else if (id === 'mood-trends') {
+        detail.innerHTML = `<div class="card"><h3 style="margin:0 0 .25rem 0">Mood Trends</h3><p class="muted">Recent mood changes and outliers detected by the tagging agent.</p></div>`;
+      }
+    }
+
+    list.querySelectorAll('.item').forEach(el => el.addEventListener('click', ()=> showDetail(el.getAttribute('data-id'))));
+    list.querySelectorAll('button').forEach(btn => btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const act = btn.getAttribute('data-act');
+      const id = btn.getAttribute('data-id');
+      if (act === 'pdf') { window.open('/report', '_blank'); toast('Exporting PDF (mock)'); }
+    }));
+    showDetail('one-dance');
+  }
+
   // Mini player behavior (demo: cycles through visible list)
   function setPlayer(idx){
     const cards = Array.from(document.querySelectorAll('#grid .card'));
@@ -693,9 +823,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Hash-based tabs
   function setActiveTab(name) {
-    [tabAnalyze, tabExplore].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
-    [panelAnalyze, panelExplore].forEach(el => el && el.classList.remove('active'));
+    [tabAnalyze, tabExplore, tabInsights].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
+    [panelAnalyze, panelExplore, panelInsights].forEach(el => el && el.classList.remove('active'));
     if (name === 'explore') { if (tabExplore){ tabExplore.classList.add('active'); tabExplore.setAttribute('aria-selected','true'); } panelExplore?.classList.add('active'); }
+    else if (name === 'insights') { if (tabInsights){ tabInsights.classList.add('active'); tabInsights.setAttribute('aria-selected','true'); } panelInsights?.classList.add('active'); renderInsights(); }
     else { if (tabAnalyze){ tabAnalyze.classList.add('active'); tabAnalyze.setAttribute('aria-selected','true'); } panelAnalyze?.classList.add('active'); }
   }
   function onHashChange() {
@@ -715,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inInput = ['INPUT','TEXTAREA'].includes(targetTag);
     // Tab navigation with Ctrl + arrows
     if (e.ctrlKey) {
-      const tabs = ['analyze','explore'];
+      const tabs = ['analyze','explore','insights'];
       const name = (location.hash || '#analyze').replace('#','');
       const idx = tabs.indexOf(name);
       if (e.key === 'ArrowRight') { const n = tabs[(idx+1)%tabs.length]; location.hash = '#' + n; }

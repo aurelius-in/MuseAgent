@@ -39,6 +39,7 @@ header.app-header {
   background: var(--ma-bg);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   backdrop-filter: none;
+  z-index: 100;
 }
 .brand {
   display: flex;
@@ -230,6 +231,14 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 /* Similarity map */
 #map-canvas { width: 100%; height: auto; background: rgba(255,255,255,0.03); border-radius: 12px; }
 
+/* Insights layout */
+.insights-split { display:flex; gap:1rem; align-items:flex-start; }
+.insights-sidebar { width: 50%; max-height: 72vh; overflow:auto; border-right:1px solid rgba(255,255,255,0.08); padding-right:.5rem; }
+.insights-detail { width: 50%; }
+.list .item { padding:.5rem .6rem; border-radius:10px; border:1px solid rgba(255,255,255,0.12); margin-bottom:.5rem; }
+.list .item h4 { margin:.1rem 0; }
+.list .item .controls { display:flex; gap:.4rem; margin-top:.4rem; }
+
 /* Explore filters: larger, bold dropdowns */
 #filter-key, #filter-mood {
   font-size: 1rem;
@@ -255,10 +264,28 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .toggle input:checked + .slider::after { transform: translateX(20px); }
 .toggle .label { color: var(--ma-text); font-size:.9rem; }
 
-.app-nav { display:flex; gap:.5rem; margin-left: .5rem; }
-.tab { padding: .4rem .8rem; border-radius: 999px; border:1px solid rgba(255,255,255,0.12); color: var(--ma-text); }
+.app-nav { display:flex; gap:.5rem; margin-left: .5rem; align-self: flex-end; }
+.tab {
+  padding: .5rem 1rem;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-bottom-color: var(--ma-bg);
+  background: rgba(255,255,255,0.06);
+  color: var(--ma-text);
+  font-weight: 700;
+  letter-spacing: .02em;
+  margin-bottom: -1px;
+}
 .tab:hover { border-color: var(--ma-fg); color: var(--ma-fg); }
-.tab.active { background: var(--ma-fg); color: var(--ma-bg); border-color: var(--ma-fg); }
+.tab.active {
+  background: var(--ma-surface);
+  color: var(--ma-text);
+  border-color: rgba(255,255,255,0.18);
+  border-bottom-color: var(--ma-surface);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+  position: relative;
+  z-index: 5;
+}
 .tab.hidden { display: none; }
 
 .panel { display: none; }

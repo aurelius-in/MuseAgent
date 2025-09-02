@@ -34,6 +34,7 @@
       <nav class="app-nav" role="tablist" aria-label="Primary">
         <a href="#analyze" id="tab-analyze" class="tab" role="tab" aria-selected="true" aria-controls="panel-analyze">Analyze</a>
         <a href="#explore" id="tab-explore" class="tab" role="tab" aria-selected="false" aria-controls="panel-explore">Explore</a>
+        <a href="#insights" id="tab-insights" class="tab" role="tab" aria-selected="false" aria-controls="panel-insights">Insights</a>
       </nav>
       <div class="header-actions">
         <label class="toggle">
@@ -47,11 +48,7 @@
           <span id="label-offline" class="label">Online</span>
         </label>
         <button id="open-chat" title="Ask MuseAgent">Chat</button>
-        <div class="header-exports" style="margin-left:1rem;display:flex;gap:.5rem">
-          <button id="export-json">Export JSON</button>
-          <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
-          <button id="export-selected-csv" title="Export selected rows" style="border-color:var(--ma-fg);color:var(--ma-fg)">Export Selected</button>
-        </div>
+        
         <div class="header-status" aria-label="Backend status" title="API status" style="margin-left:1rem;display:flex;align-items:center;gap:.6rem">
           <span class="status-item"><span id="dot-health" class="status-dot"></span><span class="status-label">API</span></span>
           <span class="status-item"><span id="dot-ready" class="status-dot"></span><span class="status-label">Index</span></span>
@@ -114,9 +111,19 @@
             <div id="agent-output" class="muted"></div>
           </div>
 
-          <div class="card" style="margin-top:1rem">
-            <h2 style="margin:0 0 .5rem 0">Insights</h2>
-            <ul id="insights-list" class="muted" style="line-height:1.6; padding-left:1.2rem; margin:0"></ul>
+          
+        </section>
+      </div>
+      <div id="panel-insights" class="panel" role="tabpanel" aria-labelledby="tab-insights">
+        <section class="card">
+          <h2 style="margin:0 0 .5rem 0">Insights</h2>
+          <div class="insights-split">
+            <aside class="insights-sidebar">
+              <div id="insights-list" class="list"></div>
+            </aside>
+            <section class="insights-detail">
+              <div id="insight-detail"></div>
+            </section>
           </div>
         </section>
       </div>
