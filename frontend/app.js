@@ -36,12 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const offlineToggle = document.getElementById('offline-toggle');
   const enrichToggle = document.getElementById('enrich-toggle');
   const generateToggle = document.getElementById('generate-toggle');
+  const labelSound = document.getElementById('label-sound');
+  const labelOffline = document.getElementById('label-offline');
+  const labelEnrich = document.getElementById('label-enrich');
+  const labelGenerate = document.getElementById('label-generate');
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
+  const tabInsights = document.getElementById('tab-insights');
   const tabReports = null;
   const tabMore = null;
   const panelAnalyze = document.getElementById('panel-analyze');
   const panelExplore = document.getElementById('panel-explore');
+  const panelInsights = document.getElementById('panel-insights');
   const panelReports = null;
   const panelMore = null;
   const reportsList = document.getElementById('reports-list');
@@ -62,6 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('search');
   const promptPlaylistBtn = document.getElementById('prompt-playlist-btn');
   const mapToggleBtn = document.getElementById('map-toggle-btn');
+  const exportSelectedCsvBtn = document.getElementById('export-selected-csv');
+  const tapBtn = document.getElementById('tap-btn');
+  const tapBpm = document.getElementById('tap-bpm');
+  const metroToggle = document.getElementById('metro-toggle');
+  const keyTrainer = document.getElementById('key-trainer');
+  const agentAutotag = document.getElementById('agent-autotag');
   // Mini player controls
   const player = document.getElementById('player');
   const playerTitle = document.getElementById('player-title');
@@ -70,8 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const playerPrev = document.getElementById('player-prev');
   const playerNext = document.getElementById('player-next');
   let playerIdx = 0; let playerTimer = null; let playing = false;
-  const exportJsonBtn = document.getElementById('export-json');
-  const exportCsvBtn = document.getElementById('export-csv');
+  const exportJsonBtn = null;
+  const exportCsvBtn = null;
+  const dotHealth = document.getElementById('dot-health');
+  const dotReady = document.getElementById('dot-ready');
+  const ntotalEl = document.getElementById('ntotal');
+  const spark = document.getElementById('metrics-spark');
   const toastEl = document.getElementById('toast');
   const detail = document.getElementById('detail');
   const detailTitle = document.getElementById('detail-title');
@@ -81,6 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const chartChroma = document.getElementById('chart-chroma');
   const analyzeRadar = document.getElementById('analyze-radar');
   const analyzeChroma = document.getElementById('analyze-chroma');
+  // Agents and insights
+  const agentDance = document.getElementById('agent-dance');
+  const agentAmbient = document.getElementById('agent-ambient');
+  const agentSummarize = document.getElementById('agent-summarize');
+  const agentOutput = document.getElementById('agent-output');
+  const insightsList = document.getElementById('insights-list');
   // Chat elements
   const chat = document.getElementById('chat');
   const openChat = document.getElementById('open-chat');
@@ -91,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastLibrary = [];
   let selectionMode = false;
   const selectedIds = new Set();
+  const favorites = new Set();
 
   // WebAudio: gentle click sound
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -126,6 +149,67 @@ document.addEventListener('DOMContentLoaded', () => {
     detail.classList.add('show');
   }
   if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
+  // Toggle label syncing
+  function syncLabels(){
+    if (labelSound && soundToggle) labelSound.textContent = soundToggle.checked ? 'Mute' : 'Sound';
+    if (labelOffline && offlineToggle) labelOffline.textContent = offlineToggle.checked ? 'Online' : 'Offline';
+    if (labelEnrich && enrichToggle) labelEnrich.textContent = enrichToggle.checked ? 'Enrich' : 'Raw';
+    if (labelGenerate && generateToggle) labelGenerate.textContent = generateToggle.checked ? 'Generate' : 'Static';
+  }
+  [soundToggle, offlineToggle, enrichToggle, generateToggle].forEach(el => el && el.addEventListener('change', syncLabels));
+  if (offlineToggle) offlineToggle.addEventListener('change', ()=>{ loadLibrary(1); });
+  syncLabels();
+  // Header export handlers (works both online/offline)
+  if (exportJsonBtn) exportJsonBtn.onclick = async () => {
+    try {
+      if (offlineToggle && offlineToggle.checked) {
+        const res = await fetch('./mock_data.json');
+        const j = await res.json();
+        const blob = new Blob([JSON.stringify(j, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'library.json'; a.click(); URL.revokeObjectURL(url); toast('Exported JSON');
+      } else {
+        const r = await fetch('/export?fmt=json'); const j = await r.json(); if (j.path) { window.open(j.path, '_blank'); toast('Exporting JSON'); } else { toast('Export failed'); }
+      }
+    } catch(_) { toast('Export failed'); }
+  };
+  if (exportCsvBtn) exportCsvBtn.onclick = async () => {
+    try {
+      if (offlineToggle && offlineToggle.checked) {
+        const res = await fetch('./mock_data.json'); const j = await res.json(); const tracks = j.tracks || [];
+        const header = ['id','filename','duration_sec','tempo_bpm','tempo_conf','key_guess','embedding_dim'];
+        const rows = tracks.map(t => header.map(h => t[h] ?? '').join(','));
+        const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'library.csv'; a.click(); URL.revokeObjectURL(url); toast('Exported CSV');
+      } else {
+        const r = await fetch('/export?fmt=csv'); const j = await r.json(); if (j.path) { window.open(j.path, '_blank'); toast('Exporting CSV'); } else { toast('Export failed'); }
+      }
+    } catch(_) { toast('Export failed'); }
+  };
+  // Status polling
+  async function refreshStatus(){
+    try {
+      const h = await fetch('/healthz').then(r=>r.json()).catch(()=>({ok:false}));
+      if (dotHealth) dotHealth.style.background = h.ok ? '#4caf50' : '#e53935';
+    } catch(_){}
+    try {
+      const r = await fetch('/readyz').then(r=>r.json()).catch(()=>({ready:false}));
+      if (dotReady) dotReady.style.background = r.ready ? '#4caf50' : '#e53935';
+      if (ntotalEl && typeof r.faiss_ntotal !== 'undefined' && r.faiss_ntotal !== null) ntotalEl.textContent = `ntotal ${r.faiss_ntotal}`;
+    } catch(_){}
+    try {
+      const m = await fetch('/metrics').then(r=>r.json()).catch(()=>null);
+      if (m && spark && spark.getContext){
+        const ctx = spark.getContext('2d');
+        ctx.clearRect(0,0,spark.width,spark.height);
+        const vals = [m.latency_ms?.p50||0, m.latency_ms?.p90||0, m.latency_ms?.p99||0];
+        const max = Math.max(1, ...vals);
+        ctx.fillStyle = 'rgba(242,212,96,0.6)';
+        vals.forEach((v,i)=>{ const h = Math.max(2, (v/max) * (spark.height-4)); ctx.fillRect(4 + i*38, spark.height - h - 2, 24, h); });
+      }
+    } catch(_){}
+  }
+  setInterval(refreshStatus, 5000);
+  refreshStatus();
   // Drag & drop analyze
   if (dropzone && input) {
     dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
@@ -182,7 +266,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_) {}
     grid.innerHTML = pageState.slice.map((t,i) => (
       `<div class="card ${selectionMode?'selectable':''}" data-tid="${t.id}">`+
-      `<canvas class="wave-mini" width="320" height="56" data-seed="${(i+1)*17}"></canvas>`+
+      `<div class="eq-mini" aria-hidden="true">`+
+      `<span></span><span></span><span></span><span></span>`+
+      `<span></span><span></span><span></span><span></span>`+
+      `</div>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
       `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
@@ -191,7 +278,9 @@ document.addEventListener('DOMContentLoaded', () => {
       `<div class="controls" style="margin-top:.5rem">`+
       `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
       `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
-      `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
+      `<button data-tid="${t.id}" class="report-btn">Report (PDF)</button>`+
+      `<button data-tid="${t.id}" class="loop-btn">Loop ▶</button>`+
+      `<button data-tid="${t.id}" class="fav-btn ${favorites.has(t.id)?'fav-active':''}">★</button>`+
       `</div>`+
       `</div>`
     )).join('');
@@ -202,23 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mod.renderPager(pager, pageState, (p)=> loadLibrary(p));
     } catch(_) {}
 
-    // Draw mini waveforms
-    grid.querySelectorAll('.wave-mini').forEach((cv) => {
-      try {
-        const ctx = cv.getContext('2d');
-        const w = cv.width, h = cv.height; ctx.clearRect(0,0,w,h);
-        const seed = Number(cv.getAttribute('data-seed')||1);
-        ctx.strokeStyle = 'rgba(242,212,96,0.9)'; ctx.lineWidth = 2; ctx.beginPath();
-        const y0 = h/2; ctx.moveTo(0, y0);
-        for (let x=0; x<w; x++) {
-          const t = (x / w) * Math.PI * (3.5 + (seed%7)*0.2);
-          const amp = Math.sin(t) * 0.6 + Math.sin(t*0.37 + seed) * 0.4;
-          const y = y0 + amp * (h*0.28);
-          ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      } catch(_){ }
-    });
+    // No canvas waveform; using animated EQ bars
 
     // Bind actions
     if (selectionMode){
@@ -261,6 +334,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const j = await r.json();
       if (j.pdf) window.open(j.pdf, '_blank');
     }));
+
+    // Loop preview
+    grid.querySelectorAll('.loop-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      const t = lastLibrary.find(x=>x.id===tid);
+      if (!t) return;
+      const url = t.loop || t.preview || t.spectrogram_png || null;
+      if (!url){ toast('No loop available'); return; }
+      try {
+        const audio = new Audio(url);
+        audio.loop = true; audio.play();
+        toast('Playing loop...');
+      } catch(_){ toast('Failed to play'); }
+    }));
+
+    // Favorites
+    grid.querySelectorAll('.fav-btn').forEach(btn => btn.addEventListener('click', (ev)=>{
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      if (favorites.has(tid)) { favorites.delete(tid); ev.currentTarget.classList.remove('fav-active'); }
+      else { favorites.add(tid); ev.currentTarget.classList.add('fav-active'); }
+    }));
   }
   if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
   if (applyFilters) applyFilters.addEventListener('click', ()=> { playClick(); loadLibrary(1); });
@@ -275,6 +370,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!mood) return;
     lastLibrary.forEach(t=>{ if (selectedIds.has(t.id)) { t.tags = t.tags || {}; t.tags.mood = mood; } });
     toast(`Tagged ${selectedIds.size} track(s) with '${mood}'`);
+    loadLibrary();
+  });
+
+  if (exportSelectedCsvBtn) exportSelectedCsvBtn.addEventListener('click', ()=>{
+    if (!selectedIds.size){ toast('No selection'); return; }
+    const header = ['id','filename','tempo_bpm','key_guess'];
+    const rows = lastLibrary.filter(t=>selectedIds.has(t.id)).map(t=> header.map(h => t[h] ?? '').join(','));
+    const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download='selected.csv'; a.click(); URL.revokeObjectURL(url);
+  });
+
+  // Tap tempo and Metronome
+  let taps = [];
+  if (tapBtn) tapBtn.addEventListener('click', ()=>{
+    const now = performance.now(); taps.push(now); if (taps.length > 8) taps.shift();
+    if (taps.length >= 2){ const diffs = []; for (let i=1;i<taps.length;i++) diffs.push(taps[i]-taps[i-1]);
+      const avg = diffs.reduce((a,b)=>a+b,0)/diffs.length; const bpm = Math.round(60000/avg);
+      if (tapBpm) tapBpm.textContent = String(bpm);
+      if (metroToggle && metroToggle.checked) startMetronome(bpm);
+    }
+  });
+  let metroTimer=null;
+  function startMetronome(bpm){
+    stopMetronome();
+    const interval = Math.max(150, 60000/Math.max(40, Math.min(240, bpm||120)));
+    metroTimer = setInterval(()=>{ playClick(); }, interval);
+  }
+  function stopMetronome(){ if (metroTimer){ clearInterval(metroTimer); metroTimer=null; } }
+  if (metroToggle) metroToggle.addEventListener('change', ()=>{
+    const bpm = Number((tapBpm && tapBpm.textContent) || 120) || 120;
+    if (metroToggle.checked) startMetronome(bpm); else stopMetronome();
+  });
+
+  // Key trainer
+  function initKeyTrainer(){
+    if (!keyTrainer) return;
+    const keys = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    keyTrainer.innerHTML = keys.map(k=>`<button class="kt" data-k="${k}">${k}</button>`).join('');
+    keyTrainer.querySelectorAll('button.kt').forEach(btn=> btn.addEventListener('click', ()=> playToneForKey(btn.getAttribute('data-k'))));
+  }
+  initKeyTrainer();
+
+  // Agent: auto-tag selection (simple rules)
+  if (agentAutotag) agentAutotag.addEventListener('click', ()=>{
+    if (!selectedIds.size){ toast('Select some tracks'); return; }
+    let changed=0; lastLibrary.forEach(t=>{
+      if (!selectedIds.has(t.id)) return;
+      const bpm = t.tempo_bpm||0; const isMinor = /m$/.test(String(t.key_guess||''));
+      const mood = bpm>120 && !isMinor ? 'energetic' : bpm<90 && isMinor ? 'dark' : 'chill';
+      t.tags = t.tags || {}; if (t.tags.mood !== mood){ t.tags.mood = mood; changed++; }
+    });
+    agentOutput.textContent = changed ? `Auto‑tagged mood for ${changed} track(s).` : 'No changes applied.';
     loadLibrary();
   });
 
@@ -399,6 +546,133 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_){ }
   }
 
+  // Insights rendering with mock reports and smart detail
+  function renderInsights(){
+    const list = document.getElementById('insights-list');
+    const detail = document.getElementById('insight-detail');
+    if (!list || !detail) return;
+    const reports = [
+      { id:'one-dance', title:'One Dance — Drake (Smart Report)', artist:'Drake', actions:['pdf'] },
+      { id:'library-overview', title:'Library Overview', artist:'All Artists', actions:['pdf'] },
+      { id:'mood-trends', title:'Mood Trends (Last 30)', artist:'Aggregate', actions:['pdf'] },
+    ];
+    list.innerHTML = reports.map(r=> `
+      <div class="item" data-id="${r.id}">
+        <h4>${r.title}</h4>
+        <div class="controls">
+          <button data-act="pdf" data-id="${r.id}">Export PDF</button>
+        </div>
+      </div>`).join('');
+
+    function showDetail(id){
+      if (id === 'one-dance') {
+        detail.innerHTML = `
+          <div class="card">
+            <h3 style="margin:0 0 .25rem 0">One Dance — Drake</h3>
+            <div class="muted">Smart analysis powered by MuseAgent</div>
+            <div style="margin-top:.6rem;display:flex;justify-content:center">
+              <canvas id="ins-radar" width="420" height="300" style="max-width:100%"></canvas>
+            </div>
+            <div class="muted" style="text-align:center;margin-top:.25rem;font-size:.9rem">Feature Radar — danceability, energy, valence, acousticness, speechiness, instrumentalness, liveness</div>
+            <div style="margin-top:.6rem">
+              <h4>Summary</h4>
+              <p>One Dance blends dancehall, afrobeats, and house influences with a steady four-on-the-floor rhythm around ~104 bpm. Harmony centres on a minor tonal area with sparse voicings, syncopated keys, and a deep bass groove. Vocals use repetitive, hook-driven phrases and call‑and‑response textures.</p>
+              <h4>Chord Structure & Harmony</h4>
+              <ul>
+                <li>Key: B minor (relative D major colour in hooks)</li>
+                <li>Common loop: Bm – D – A – F#m (vi – I – V – iii in D)</li>
+                <li>Voicings: short, sustained synth pads; low‑passed keys; occasional suspensions</li>
+                <li>Bass: repetitive ostinato locking tight with kick pattern</li>
+              </ul>
+              <h4>Rhythm & Style</h4>
+              <ul>
+                <li>Tempo: ~104 bpm; swing‑lite offbeats; syncopated hats</li>
+                <li>Afrobeats/dancehall accents with modern pop/house production polish</li>
+              </ul>
+              <h4>AI Evaluations</h4>
+              <ul>
+                <li>Danceability: Very high — consistent groove and minimal harmonic friction</li>
+                <li>Energy: Moderate — emphasis on groove over aggression</li>
+                <li>Valence: Medium — minor harmony balanced by warm timbres</li>
+                <li>Hook Strength: High — repetitive melodic motifs and rhythm</li>
+              </ul>
+              <h4>Production Notes</h4>
+              <ul>
+                <li>Side‑chained bass/kick interaction; subtle saturation on low mids</li>
+                <li>Short plate/room reverbs; mono‑compatible percussion; wide pads</li>
+              </ul>
+            </div>
+            <div class="card" style="margin-top:.6rem">
+              <h4 style="margin:0 0 .25rem 0">Energy vs Valence (Mood Map)</h4>
+              <canvas id="ins-mood" width="560" height="280" style="width:100%;max-width:560px;display:block;margin:0 auto"></canvas>
+            </div>
+          </div>`;
+        try {
+          // Draw labeled radar with meaningful axes
+          const radarCanvas = document.getElementById('ins-radar');
+          const labels = ['Danceability','Energy','Valence','Acousticness','Speechiness','Instrumentalness','Liveness'];
+          const values = [0.9, 0.65, 0.55, 0.35, 0.08, 0.1, 0.2];
+          if (radarCanvas && radarCanvas.getContext){
+            const ctx = radarCanvas.getContext('2d');
+            const w = radarCanvas.width, h = radarCanvas.height; const cx = w/2, cy = h/2 + 10; const r = Math.min(w,h)*0.35;
+            ctx.clearRect(0,0,w,h);
+            ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.fillStyle = 'rgba(242,212,96,0.15)'; ctx.lineWidth = 1;
+            const N = labels.length;
+            // grid rings
+            for (let ring=1; ring<=4; ring++){
+              const rr = (r*ring)/4; ctx.beginPath(); for(let i=0;i<N;i++){ const a = -Math.PI/2 + (i/N)*Math.PI*2; const x = cx + rr*Math.cos(a); const y = cy + rr*Math.sin(a); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.closePath(); ctx.stroke();
+            }
+            // axes + labels
+            ctx.fillStyle = 'rgba(234,231,242,0.9)'; ctx.font = '12px Montserrat, sans-serif';
+            for (let i=0;i<N;i++){
+              const a = -Math.PI/2 + (i/N)*Math.PI*2; const x = cx + r*Math.cos(a); const y = cy + r*Math.sin(a);
+              ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.stroke();
+              const lx = cx + (r+18)*Math.cos(a); const ly = cy + (r+18)*Math.sin(a);
+              ctx.textAlign = Math.cos(a) > 0.2 ? 'left' : Math.cos(a) < -0.2 ? 'right' : 'center';
+              ctx.textBaseline = Math.abs(Math.sin(a)) < 0.2 ? 'middle' : (Math.sin(a) > 0 ? 'top' : 'alphabetic');
+              ctx.fillText(labels[i], lx, ly);
+            }
+            // polygon
+            ctx.beginPath();
+            for (let i=0;i<N;i++){
+              const a = -Math.PI/2 + (i/N)*Math.PI*2; const rr = r * Math.max(0, Math.min(1, values[i]));
+              const x = cx + rr*Math.cos(a); const y = cy + rr*Math.sin(a);
+              if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.closePath(); ctx.fillStyle = 'rgba(242,212,96,0.22)'; ctx.fill(); ctx.strokeStyle='rgba(242,212,96,0.8)'; ctx.stroke();
+          }
+          // Mood map at bottom
+          const mood = document.getElementById('ins-mood');
+          if (mood && mood.getContext){
+            const ctx = mood.getContext('2d'); const w=mood.width, h=mood.height; ctx.clearRect(0,0,w,h);
+            // axes
+            ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(w-20,h-30); ctx.stroke(); ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(40,20); ctx.stroke();
+            ctx.fillStyle='rgba(234,231,242,0.8)'; ctx.font='12px Montserrat,sans-serif'; ctx.fillText('Energy →', w-90, h-12);
+            ctx.save(); ctx.translate(18, 40); ctx.rotate(-Math.PI/2); ctx.fillText('Valence →', 0,0); ctx.restore();
+            // compute point from tempo & mode
+            const tempo = 104; const energy = Math.min(1, Math.max(0, tempo/200));
+            const isMinor = true; const valence = isMinor ? 0.45 : 0.7;
+            const x = 40 + energy * (w-60); const y = (h-30) - valence * (h-60);
+            ctx.fillStyle='rgba(242,212,96,0.9)'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+          }
+        } catch(_) {}
+      } else if (id === 'library-overview') {
+        detail.innerHTML = `<div class="card"><h3 style="margin:0 0 .25rem 0">Library Overview</h3><p class="muted">Top keys, moods, and tempo distribution across your library.</p></div>`;
+      } else if (id === 'mood-trends') {
+        detail.innerHTML = `<div class="card"><h3 style="margin:0 0 .25rem 0">Mood Trends</h3><p class="muted">Recent mood changes and outliers detected by the tagging agent.</p></div>`;
+      }
+    }
+
+    list.querySelectorAll('.item').forEach(el => el.addEventListener('click', ()=> showDetail(el.getAttribute('data-id'))));
+    list.querySelectorAll('button').forEach(btn => btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const act = btn.getAttribute('data-act');
+      const id = btn.getAttribute('data-id');
+      if (act === 'pdf') { window.open('/report', '_blank'); toast('Exporting PDF (mock)'); }
+    }));
+    showDetail('one-dance');
+  }
+
   // Mini player behavior (demo: cycles through visible list)
   function setPlayer(idx){
     const cards = Array.from(document.querySelectorAll('#grid .card'));
@@ -422,6 +696,55 @@ document.addEventListener('DOMContentLoaded', () => {
   if (playerPrev) playerPrev.addEventListener('click', ()=>{ setPlayer(playerIdx-1); });
   if (playerNext) playerNext.addEventListener('click', ()=>{ setPlayer(playerIdx+1); });
   setPlayer(0);
+
+  // Lightweight agentic helpers (rule-based)
+  function renderList(selector, items){
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.innerHTML = items.map(s=>`<li>${s}</li>`).join('');
+  }
+  function summarizeLibrary(){
+    const n = lastLibrary.length;
+    const avgTempo = Math.round((lastLibrary.reduce((a,t)=>a+(t.tempo_bpm||0),0) / (n||1))||0);
+    const keys = {};
+    lastLibrary.forEach(t=>{ const k=t.key_guess; if(k) keys[k]=(keys[k]||0)+1; });
+    const topKey = Object.entries(keys).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'unknown';
+    const moods = {}; lastLibrary.forEach(t=>{ const m=t.tags?.mood; if(m) moods[m]=(moods[m]||0)+1; });
+    const topMoods = Object.entries(moods).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([m,c])=>`${m} (${c})`).join(', ');
+    return `Tracks: ${n}. Avg tempo: ${avgTempo} bpm. Common key: ${topKey}. Top moods: ${topMoods || 'n/a'}.`;
+  }
+  function pickDanceable(){
+    const ok = lastLibrary.filter(t => (t.tempo_bpm||0) >= 110 && (t.tempo_bpm||0) <= 135 && !/m$/.test(String(t.key_guess||'')));
+    return ok.slice(0, 15);
+  }
+  function pickAmbient(){
+    const ok = lastLibrary.filter(t => (t.tempo_bpm||0) <= 90 && (/m$/.test(String(t.key_guess||'')) || /chill|ambient|dark/i.test(String(t.tags?.mood||''))));
+    return ok.slice(0, 15);
+  }
+  function refreshInsights(){
+    const items = [];
+    if (lastLibrary.length){
+      const tempos = lastLibrary.map(t=>t.tempo_bpm||0).sort((a,b)=>a-b);
+      const mid = tempos[Math.floor(tempos.length/2)]||0;
+      items.push(`Median tempo: ${mid} bpm`);
+      const keys = {}; lastLibrary.forEach(t=>{ const k=t.key_guess; if(k) keys[k]=(keys[k]||0)+1; });
+      const rare = Object.entries(keys).sort((a,b)=>a[1]-b[1])[0]?.[0]; if (rare) items.push(`Rarest key: ${rare}`);
+      const moodCounts = {}; lastLibrary.forEach(t=>{ const m=t.tags?.mood; if(m) moodCounts[m]=(moodCounts[m]||0)+1; });
+      const topMood = Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]; if (topMood) items.push(`Dominant mood: ${topMood}`);
+    }
+    renderList('#insights-list', items);
+  }
+  if (agentDance) agentDance.addEventListener('click', ()=>{
+    const picks = pickDanceable();
+    agentOutput.textContent = picks.length ? `Danceable set (${picks.length}): `+picks.map(t=>t.filename).join(', ') : 'No suitable tracks found.';
+  });
+  if (agentAmbient) agentAmbient.addEventListener('click', ()=>{
+    const picks = pickAmbient();
+    agentOutput.textContent = picks.length ? `Ambient set (${picks.length}): `+picks.map(t=>t.filename).join(', ') : 'No suitable tracks found.';
+  });
+  if (agentSummarize) agentSummarize.addEventListener('click', ()=>{
+    agentOutput.textContent = summarizeLibrary();
+  });
 
   // Tone preview on detail key
   function playToneForKey(key){
@@ -500,9 +823,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Hash-based tabs
   function setActiveTab(name) {
-    [tabAnalyze, tabExplore].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
-    [panelAnalyze, panelExplore].forEach(el => el && el.classList.remove('active'));
+    [tabAnalyze, tabExplore, tabInsights].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
+    [panelAnalyze, panelExplore, panelInsights].forEach(el => el && el.classList.remove('active'));
     if (name === 'explore') { if (tabExplore){ tabExplore.classList.add('active'); tabExplore.setAttribute('aria-selected','true'); } panelExplore?.classList.add('active'); }
+    else if (name === 'insights') { if (tabInsights){ tabInsights.classList.add('active'); tabInsights.setAttribute('aria-selected','true'); } panelInsights?.classList.add('active'); renderInsights(); }
     else { if (tabAnalyze){ tabAnalyze.classList.add('active'); tabAnalyze.setAttribute('aria-selected','true'); } panelAnalyze?.classList.add('active'); }
   }
   function onHashChange() {
@@ -522,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inInput = ['INPUT','TEXTAREA'].includes(targetTag);
     // Tab navigation with Ctrl + arrows
     if (e.ctrlKey) {
-      const tabs = ['analyze','explore'];
+      const tabs = ['analyze','explore','insights'];
       const name = (location.hash || '#analyze').replace('#','');
       const idx = tabs.indexOf(name);
       if (e.key === 'ArrowRight') { const n = tabs[(idx+1)%tabs.length]; location.hash = '#' + n; }
@@ -737,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
           (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:320px;max-width:100%;margin-top:.5rem;border-radius:8px"/>` : '')+
           `<div class="controls" style="margin-top:.5rem">`+
           `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
-          `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
+          `<button data-tid="${t.id}" class="report-btn">Report (PDF)</button>`+
           `</div>`+
           `</div>`
         )).join('');

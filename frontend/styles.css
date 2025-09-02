@@ -39,6 +39,7 @@ header.app-header {
   background: var(--ma-bg);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   backdrop-filter: none;
+  z-index: 100;
 }
 .brand {
   display: flex;
@@ -59,7 +60,7 @@ main {
 }
 
 /* Mini waveform canvas */
-.wave-mini { width: 100%; height: 56px; background: rgba(255,255,255,0.03); border-radius: 10px; display:block; }
+.wave-mini { display:none; }
 
 .card {
   padding: 0.75rem;
@@ -139,7 +140,9 @@ body::before {
 button {
   position: relative;
   box-shadow: 0 0 0 rgba(242,212,96,0);
+  font-weight: 700;
 }
+button.fav-active { border-color: var(--ma-fg); color: var(--ma-fg); }
 button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 
 /* Logo pulse tint every 10s for 1s */
@@ -167,20 +170,7 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .thumb { width: 100%; height: 90px; object-fit: cover; border-radius: 10px; }
 
 /* Animated waveform placeholder */
-.wave-anim {
-  width: 100%;
-  height: 56px;
-  border-radius: 10px;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(242,212,96,0.45) 0px,
-    rgba(242,212,96,0.45) 3px,
-    rgba(106,143,139,0.35) 3px,
-    rgba(106,143,139,0.35) 6px
-  );
-  background-size: 200% 100%;
-  animation: waveScroll 2.5s linear infinite;
-}
+.wave-anim { display:none; }
 /* Reports split layout */
 .reports-split { display:flex; gap:1rem; align-items: flex-start; }
 .reports-sidebar { width: 220px; max-height: 70vh; overflow:auto; border-right:1px solid rgba(255,255,255,0.08); padding-right:.5rem; }
@@ -241,8 +231,31 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 /* Similarity map */
 #map-canvas { width: 100%; height: auto; background: rgba(255,255,255,0.03); border-radius: 12px; }
 
+/* Insights layout */
+.insights-split { display:flex; gap:1rem; align-items:flex-start; }
+.insights-sidebar { width: 50%; max-height: 72vh; overflow:auto; border-right:1px solid rgba(255,255,255,0.08); padding-right:.5rem; }
+.insights-detail { width: 50%; }
+.list .item { padding:.5rem .6rem; border-radius:10px; border:1px solid rgba(255,255,255,0.12); margin-bottom:.5rem; }
+.list .item h4 { margin:.1rem 0; }
+.list .item .controls { display:flex; gap:.4rem; margin-top:.4rem; }
+
+/* Explore filters: larger, bold dropdowns */
+#filter-key, #filter-mood {
+  font-size: 1rem;
+  font-weight: 700;
+  height: 38px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.2);
+  color: var(--ma-text);
+}
+
 /* Header actions */
 .header-actions { margin-left: auto; display:flex; align-items:center; gap:1rem; }
+.status-item { display:inline-flex; align-items:center; gap:.25rem; }
+.status-dot { width:10px; height:10px; border-radius:50%; background: #8a8a8a; display:inline-block; box-shadow: 0 0 8px rgba(0,0,0,0.3); }
+.status-label { font-size:.85rem; color: var(--ma-text); opacity:.85; }
 .toggle { position: relative; display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; }
 .toggle input { display:none; }
 .toggle .slider { width: 46px; height: 26px; border-radius: 999px; background: rgba(255,255,255,0.12); display:inline-block; position:relative; transition: all 180ms ease; border:1px solid rgba(255,255,255,0.14); }
@@ -251,10 +264,28 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .toggle input:checked + .slider::after { transform: translateX(20px); }
 .toggle .label { color: var(--ma-text); font-size:.9rem; }
 
-.app-nav { display:flex; gap:.5rem; margin-left: .5rem; }
-.tab { padding: .4rem .8rem; border-radius: 999px; border:1px solid rgba(255,255,255,0.12); color: var(--ma-text); }
+.app-nav { display:flex; gap:.5rem; margin-left: .5rem; align-self: flex-end; }
+.tab {
+  padding: .5rem 1rem;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-bottom-color: var(--ma-bg);
+  background: rgba(255,255,255,0.06);
+  color: var(--ma-text);
+  font-weight: 700;
+  letter-spacing: .02em;
+  margin-bottom: -1px;
+}
 .tab:hover { border-color: var(--ma-fg); color: var(--ma-fg); }
-.tab.active { background: var(--ma-fg); color: var(--ma-bg); border-color: var(--ma-fg); }
+.tab.active {
+  background: var(--ma-surface);
+  color: var(--ma-text);
+  border-color: rgba(255,255,255,0.18);
+  border-bottom-color: var(--ma-surface);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+  position: relative;
+  z-index: 5;
+}
 .tab.hidden { display: none; }
 
 .panel { display: none; }

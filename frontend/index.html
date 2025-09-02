@@ -34,19 +34,30 @@
       <nav class="app-nav" role="tablist" aria-label="Primary">
         <a href="#analyze" id="tab-analyze" class="tab" role="tab" aria-selected="true" aria-controls="panel-analyze">Analyze</a>
         <a href="#explore" id="tab-explore" class="tab" role="tab" aria-selected="false" aria-controls="panel-explore">Explore</a>
+        <a href="#insights" id="tab-insights" class="tab" role="tab" aria-selected="false" aria-controls="panel-insights">Insights</a>
       </nav>
       <div class="header-actions">
         <label class="toggle">
           <input id="sound-toggle" type="checkbox" />
           <span class="slider"></span>
-          <span class="label">Mute</span>
+          <span id="label-sound" class="label">Mute</span>
         </label>
         <label class="toggle">
           <input id="offline-toggle" type="checkbox" checked />
           <span class="slider"></span>
-          <span class="label">Online</span>
+          <span id="label-offline" class="label">Online</span>
         </label>
         <button id="open-chat" title="Ask MuseAgent">Chat</button>
+        
+        <div class="header-status" aria-label="Backend status" title="API status" style="margin-left:1rem;display:flex;align-items:center;gap:.6rem">
+          <span class="status-item"><span id="dot-health" class="status-dot"></span><span class="status-label">API</span></span>
+          <span class="status-item"><span id="dot-ready" class="status-dot"></span><span class="status-label">Index</span></span>
+          <span class="status-metrics" style="display:flex;align-items:center;gap:.25rem">
+            <canvas id="metrics-spark" width="120" height="24" aria-label="Latency"></canvas>
+            <span id="ntotal" class="muted"></span>
+          </span>
+        </div>
+        <button id="open-apikey" title="Set API Key" style="margin-left:.5rem">API Key</button>
       </div>
     </header>
 
@@ -59,40 +70,60 @@
             <label class="toggle" style="margin-left:.5rem">
               <input id="enrich-toggle" type="checkbox" />
               <span class="slider"></span>
-              <span class="label">Enrich</span>
+              <span id="label-enrich" class="label">Enrich</span>
             </label>
             <label class="toggle" style="margin-left:.5rem">
               <input id="generate-toggle" type="checkbox" />
               <span class="slider"></span>
-              <span class="label">Generate</span>
+              <span id="label-generate" class="label">Generate</span>
             </label>
             <button id="analyze-btn" type="submit">Analyze</button>
           </form>
           <div id="dropzone" class="dropzone" style="margin-top:.75rem">Drop audio/video files here to analyze</div>
           <div id="results" style="margin-top:1rem"></div>
-          <div id="analyze-widgets" class="charts" style="margin-top:1rem">
-            <canvas id="analyze-radar" width="420" height="320"></canvas>
-            <canvas id="analyze-chroma" width="420" height="320"></canvas>
+          <div id="analyze-widgets" class="charts" style="margin-top:1rem; display:none">
+            <canvas id="analyze-radar" width="300" height="220"></canvas>
+            <canvas id="analyze-chroma" width="300" height="220"></canvas>
           </div>
           <div class="card" style="margin-top:1rem">
-            <h2 style="margin:0 0 .5rem 0">Reports</h2>
+            <h2 style="margin:0 0 .5rem 0">Tap Tempo & Metronome</h2>
+            <div class="row" style="margin-bottom:.5rem">
+              <button id="tap-btn">Tap</button>
+              <div class="muted">Current: <span id="tap-bpm">—</span> bpm</div>
+              <label class="toggle"><input id="metro-toggle" type="checkbox"/><span class="slider"></span><span class="label">Metronome</span></label>
+            </div>
+            <div class="muted" id="tap-help">Tap at least 4 times to estimate BPM; toggle metronome to hear clicks.</div>
+          </div>
+
+          <div class="card" style="margin-top:1rem">
+            <h2 style="margin:0 0 .5rem 0">Key Trainer</h2>
+            <div id="key-trainer" class="row" style="flex-wrap:wrap"></div>
+          </div>
+          
+          <div class="card" style="margin-top:1rem">
+            <h2 style="margin:0 0 .5rem 0">AI Agents</h2>
             <div class="controls" style="margin-bottom:.5rem">
-              <button id="export-json">Export JSON</button>
-              <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
+              <button id="agent-dance">Find danceable set</button>
+              <button id="agent-ambient">Compile moody ambient</button>
+              <button id="agent-summarize">Summarize library</button>
+              <button id="agent-autotag">Auto‑tag selected</button>
             </div>
-            <div class="reports-split">
-              <aside id="reports-sidebar" class="reports-sidebar" aria-label="Report files list"></aside>
-              <section id="reports-detail" class="reports-detail" aria-label="Report detail">
-                <div id="report-meta" class="muted" style="margin-bottom:.5rem"></div>
-                <div class="charts">
-                  <canvas id="reports-dist" width="420" height="320"></canvas>
-                  <canvas id="reports-keys" width="420" height="320"></canvas>
-                </div>
-                <div class="charts" style="margin-top:1rem">
-                  <canvas id="reports-map" width="420" height="320"></canvas>
-                </div>
-              </section>
-            </div>
+            <div id="agent-output" class="muted"></div>
+          </div>
+
+          
+        </section>
+      </div>
+      <div id="panel-insights" class="panel" role="tabpanel" aria-labelledby="tab-insights">
+        <section class="card">
+          <h2 style="margin:0 0 .5rem 0">Insights</h2>
+          <div class="insights-split">
+            <aside class="insights-sidebar">
+              <div id="insights-list" class="list"></div>
+            </aside>
+            <section class="insights-detail">
+              <div id="insight-detail"></div>
+            </section>
           </div>
         </section>
       </div>
@@ -178,6 +209,21 @@
           <li>/: Open Chat</li>
           <li>Esc: Close dialogs</li>
         </ul>
+      </div>
+    </div>
+
+    <!-- API key overlay -->
+    <div id="apikey" class="overlay">
+      <div class="overlay-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <h3 style="margin:0">API Key</h3>
+          <button id="apikey-close">Close</button>
+        </div>
+        <div class="row" style="margin-bottom:.5rem">
+          <input id="api-key-input" type="text" placeholder="Enter API key" style="min-width:280px"/>
+          <button id="api-key-save">Save</button>
+        </div>
+        <div class="muted">Used for authenticated API requests when Online.</div>
       </div>
     </div>
 
