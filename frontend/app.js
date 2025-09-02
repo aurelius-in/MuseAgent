@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const panelReports = document.getElementById('panel-reports');
   const panelMore = document.getElementById('panel-more');
   const reportsList = document.getElementById('reports-list');
+  const exportJsonBtn = document.getElementById('export-json');
+  const exportCsvBtn = document.getElementById('export-csv');
   const detail = document.getElementById('detail');
   const detailTitle = document.getElementById('detail-title');
   const detailMeta = document.getElementById('detail-meta');
@@ -210,6 +212,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const j = await r.json();
       if (j.pdf) window.open(j.pdf, '_blank');
     }));
+
+    if (exportJsonBtn) exportJsonBtn.onclick = async () => {
+      playClick();
+      if (offlineToggle && offlineToggle.checked) {
+        const blob = new Blob([JSON.stringify({ tracks }, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'library.json'; a.click(); URL.revokeObjectURL(url);
+      } else {
+        const r = await fetch('/export?fmt=json'); const j = await r.json(); if (j.path) window.open(j.path, '_blank');
+      }
+    };
+    if (exportCsvBtn) exportCsvBtn.onclick = async () => {
+      playClick();
+      if (offlineToggle && offlineToggle.checked) {
+        const header = ['id','filename','duration_sec','tempo_bpm','tempo_conf','key_guess','embedding_dim'];
+        const rows = tracks.map(t => header.map(h => t[h] ?? '').join(','));
+        const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'library.csv'; a.click(); URL.revokeObjectURL(url);
+      } else {
+        const r = await fetch('/export?fmt=csv'); const j = await r.json(); if (j.path) window.open(j.path, '_blank');
+      }
+    };
   }
 
   // If a panel overflows viewport notably, move overflow content to More tab
