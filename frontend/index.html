@@ -21,7 +21,6 @@
     <div id="splash" role="status" aria-live="polite">
       <div class="splash-content">
         <img id="splash-logo" class="splash-logo" src="/assets/ma-logo.png" alt="MuseAgent logo" />
-        <div class="splash-title">MuseAgent</div>
         <div class="splash-subtitle muted">Music Intelligence — analyze • tag • recommend • report</div>
       </div>
     </div>
@@ -130,7 +129,7 @@
       <div id="panel-explore" class="panel" role="tabpanel" aria-labelledby="tab-explore">
         <section class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
-            <h2 style="margin:0">Library</h2>
+            <h2 style="margin:0"></h2>
             <div class="row">
               <select id="filter-key"><option value="">All Keys</option><option>C</option><option>G</option><option>D</option><option>A</option><option>E</option><option>F</option><option>Am</option><option>Em</option><option>Dm</option><option>Gm</option></select>
               <select id="filter-mood"><option value="">All Moods</option><option>chill</option><option>energetic</option><option>happy</option><option>sad</option><option>dark</option></select>
@@ -227,14 +226,7 @@
       </div>
     </div>
 
-    <!-- Mini player -->
-    <div id="player" class="player" aria-label="Mini player" role="region">
-      <button id="player-prev" title="Previous">⏮</button>
-      <button id="player-play" title="Play/Pause">▶</button>
-      <button id="player-next" title="Next">⏭</button>
-      <div class="player-title" id="player-title">—</div>
-      <div class="player-progress" aria-label="Progress"><span id="player-bar"></span></div>
-    </div>
+    
 
     <script src="./app.js"></script>
     <script>

@@ -222,11 +222,7 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .overlay.show { display:flex; }
 .overlay-inner { width:min(720px,92vw); background: var(--ma-surface); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:1rem; }
 
-/* Mini player */
-.player { position: fixed; left: 0; right: 0; bottom: 0; display:flex; align-items:center; gap:.6rem; padding:.5rem .75rem; background: rgba(0,0,0,0.35); backdrop-filter: blur(6px); border-top:1px solid rgba(255,255,255,0.08); z-index: 1300; }
-.player-title { flex:1; color: var(--ma-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.player-progress { flex:2; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; }
-.player-progress > span { display:block; height:100%; background: var(--ma-fg); width: 0%; }
+/* Removed mini player */
 
 /* Similarity map */
 #map-canvas { width: 100%; height: auto; background: rgba(255,255,255,0.03); border-radius: 12px; }
