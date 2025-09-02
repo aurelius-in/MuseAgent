@@ -38,12 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateToggle = document.getElementById('generate-toggle');
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
-  const tabReports = document.getElementById('tab-reports');
-  const tabMore = document.getElementById('tab-more');
+  const tabReports = null;
+  const tabMore = null;
   const panelAnalyze = document.getElementById('panel-analyze');
   const panelExplore = document.getElementById('panel-explore');
-  const panelReports = document.getElementById('panel-reports');
-  const panelMore = document.getElementById('panel-more');
+  const panelReports = null;
+  const panelMore = null;
   const reportsList = document.getElementById('reports-list');
   // Explore filters
   const filterKey = document.getElementById('filter-key');
@@ -500,11 +500,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Hash-based tabs
   function setActiveTab(name) {
-    [tabAnalyze, tabExplore, tabReports, tabMore].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
-    [panelAnalyze, panelExplore, panelReports, panelMore].forEach(el => el && el.classList.remove('active'));
-    if (name === 'explore') { if (tabExplore){ tabExplore.classList.add('active'); tabExplore.setAttribute('aria-selected','true'); } panelExplore?.classList.add('active'); maybeSplit('explore'); }
-    else if (name === 'reports') { if (tabReports){ tabReports.classList.add('active'); tabReports.setAttribute('aria-selected','true'); } panelReports?.classList.add('active'); renderReports(); maybeSplit('reports'); }
-    else if (name === 'more') { if (tabMore){ tabMore.classList.add('active'); tabMore.setAttribute('aria-selected','true'); } panelMore?.classList.add('active'); }
+    [tabAnalyze, tabExplore].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
+    [panelAnalyze, panelExplore].forEach(el => el && el.classList.remove('active'));
+    if (name === 'explore') { if (tabExplore){ tabExplore.classList.add('active'); tabExplore.setAttribute('aria-selected','true'); } panelExplore?.classList.add('active'); }
     else { if (tabAnalyze){ tabAnalyze.classList.add('active'); tabAnalyze.setAttribute('aria-selected','true'); } panelAnalyze?.classList.add('active'); }
   }
   function onHashChange() {
@@ -524,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inInput = ['INPUT','TEXTAREA'].includes(targetTag);
     // Tab navigation with Ctrl + arrows
     if (e.ctrlKey) {
-      const tabs = ['analyze','explore','reports'];
+      const tabs = ['analyze','explore'];
       const name = (location.hash || '#analyze').replace('#','');
       const idx = tabs.indexOf(name);
       if (e.key === 'ArrowRight') { const n = tabs[(idx+1)%tabs.length]; location.hash = '#' + n; }
