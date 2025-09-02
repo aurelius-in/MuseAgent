@@ -122,6 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatLog = document.getElementById('chat-log');
   const chatForm = document.getElementById('chat-form');
   const chatText = document.getElementById('chat-text');
+  // Analyze inline chat
+  const analyzeChatLog = document.getElementById('analyze-chat-log');
+  const analyzeChatForm = document.getElementById('analyze-chat-form');
+  const analyzeChatText = document.getElementById('analyze-chat-text');
   let lastLibrary = [];
   let selectionMode = false;
   const selectedIds = new Set();
@@ -580,21 +584,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const list = document.getElementById('insights-list');
     const detail = document.getElementById('insight-detail');
     if (!list || !detail) return;
-    // Build from current library if available; otherwise show defaults
-    const items = (lastLibrary && lastLibrary.length ? lastLibrary : [
-      { id:'one-dance', filename:'Drake — One Dance', actions:['pdf'] }
-    ]);
-    list.innerHTML = items.map(t=> `
-      <div class="item" data-id="${t.id}">
-        <h4>${t.filename || t.title}</h4>
-        <div class="controls">
-          <button data-tid="${t.id}" class="small play">▶</button>
-          <button data-tid="${t.id}" class="small pause">⏸</button>
-          <button data-tid="${t.id}" class="small prev">⏮</button>
-          <button data-tid="${t.id}" class="small next">⏭</button>
-          <button data-act="pdf" data-id="${t.id}">Export PDF</button>
-        </div>
-      </div>`).join('');
+    let items = (lastLibrary && lastLibrary.length ? lastLibrary : []);
+    const ensure = async () => {
+      if (items.length) return items;
+      try { const res = await fetch('./mock_data.json'); const j = await res.json(); items = j.tracks || []; } catch(_) {}
+      return items;
+    };
+    (async ()=>{
+      await ensure();
+      list.innerHTML = items.map(t=> `
+        <div class="item" data-id="${t.id}">
+          <h4>${t.filename || t.title}</h4>
+          <div class="controls">
+            <button data-tid="${t.id}" class="small play">▶</button>
+            <button data-tid="${t.id}" class="small pause">⏸</button>
+            <button data-tid="${t.id}" class="small prev">⏮</button>
+            <button data-tid="${t.id}" class="small next">⏭</button>
+            <button data-act="pdf" data-id="${t.id}">Export PDF</button>
+          </div>
+        </div>`).join('');
 
     function showDetail(id){
       if (id === 'one-dance') {
@@ -721,13 +729,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    list.querySelectorAll('.item').forEach(el => el.addEventListener('click', ()=> showDetail(el.getAttribute('data-id'))));
-    list.querySelectorAll('button').forEach(btn => btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const act = btn.getAttribute('data-act');
-      const id = btn.getAttribute('data-id');
-      if (act === 'pdf') { window.open('/report', '_blank'); toast('Exporting PDF (mock)'); }
-    }));
+      list.querySelectorAll('.item').forEach(el => el.addEventListener('click', ()=> showDetail(el.getAttribute('data-id'))));
+      list.querySelectorAll('button').forEach(btn => btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const act = btn.getAttribute('data-act');
+        const id = btn.getAttribute('data-id');
+        if (act === 'pdf') { window.open('/report', '_blank'); toast('Exporting PDF (mock)'); }
+      }));
     // tiny transport
     function beep(freq, durMs){
       audioCtx = audioCtx || new AudioContext();
@@ -740,7 +748,8 @@ document.addEventListener('DOMContentLoaded', () => {
     list.querySelectorAll('.pause').forEach(b=> b.addEventListener('click', ()=> beep(330,140)));
     list.querySelectorAll('.prev').forEach(b=> b.addEventListener('click', ()=> beep(440,160)));
     list.querySelectorAll('.next').forEach(b=> b.addEventListener('click', ()=> beep(880,120)));
-    showDetail('one-dance');
+      showDetail('one-dance');
+    })();
   }
 
   // Removed mini player behavior
@@ -818,6 +827,14 @@ document.addEventListener('DOMContentLoaded', () => {
     chatLog.appendChild(div);
     chatLog.scrollTop = chatLog.scrollHeight;
   }
+  function appendAnalyzeChat(role, text){
+    if (!analyzeChatLog) return;
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
+    div.textContent = String(text||'');
+    analyzeChatLog.appendChild(div);
+    analyzeChatLog.scrollTop = analyzeChatLog.scrollHeight;
+  }
   if (openChat && chat) openChat.addEventListener('click', () => { chat.classList.add('show'); if (chatText) chatText.focus(); });
   if (chatClose && chat) chatClose.addEventListener('click', () => chat.classList.remove('show'));
   if (chatForm) chatForm.addEventListener('submit', async (e) => {
@@ -837,6 +854,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       appendChat('bot', reply);
     } catch(err){ appendChat('bot', 'Error answering your question.'); }
+  });
+
+  if (analyzeChatForm) analyzeChatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = (analyzeChatText && analyzeChatText.value || '').trim();
+    if (!q) return;
+    appendAnalyzeChat('user', q); if (analyzeChatText) analyzeChatText.value = '';
+    try {
+      let reply;
+      if (offlineToggle && offlineToggle.checked){
+        reply = offlineChat(q, lastLibrary);
+      } else {
+        const r = await fetch('/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: q }) });
+        const j = await r.json();
+        reply = j.reply || '...';
+      }
+      appendAnalyzeChat('bot', reply);
+    } catch(err){ appendAnalyzeChat('bot', 'Error answering your question.'); }
   });
 
   function offlineChat(q, tracks){

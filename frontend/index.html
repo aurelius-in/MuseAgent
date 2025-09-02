@@ -64,7 +64,7 @@
       <div id="panel-analyze" class="panel active" role="tabpanel" aria-labelledby="tab-analyze">
         <div class="analyze-split">
           <section class="card analyze-left">
-            <h2 style="margin-top:0">Analyze Tracks</h2>
+            <h2 style="margin-top:0">Track analysis</h2>
             <form id="upload-form" class="row">
               <input id="file-input" type="file" multiple accept="audio/*,video/*,.mp3,.wav,.flac,.mp4,.m4a" />
               <label class="toggle" style="margin-left:.5rem">
@@ -100,7 +100,9 @@
               <div id="key-trainer" class="row" style="flex-wrap:wrap"></div>
             </div>
             
-            <div class="card" style="margin-top:1rem">
+          </section>
+          <section class="card analyze-right">
+            <section class="card ai-agents" style="margin-bottom:1rem">
               <h2 style="margin:0 0 .5rem 0">AI Agents</h2>
               <div class="controls" style="margin-bottom:.5rem">
                 <button id="agent-dance">Find danceable set</button>
@@ -109,15 +111,13 @@
                 <button id="agent-autotag">Auto‑tag selected</button>
               </div>
               <div id="agent-output" class="muted"></div>
-            </div>
-          </section>
-          <section class="card analyze-right">
+            </section>
             <h2 style="margin:0 0 .5rem 0">Ask MuseAgent</h2>
-            <div id="analyze-chat-log" class="chat-log" style="height:50vh"></div>
-            <form id="analyze-chat-form" class="row" autocomplete="off" style="margin-top:.5rem">
+            <form id="analyze-chat-form" class="row" autocomplete="off" style="margin:0 0 .5rem 0">
               <input id="analyze-chat-text" type="text" placeholder="Ask Anything" style="flex:1"/>
               <button id="analyze-chat-send" type="submit" title="Send">↑</button>
             </form>
+            <div id="analyze-chat-log" class="chat-log" style="height:50vh"></div>
           </section>
         </div>
       </div>
