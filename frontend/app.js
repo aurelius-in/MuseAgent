@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('upload-form');
   const input = document.getElementById('file-input');
   const results = document.getElementById('results');
+  const dropzone = document.getElementById('dropzone');
   const grid = document.getElementById('grid');
   const reloadLib = document.getElementById('reload-lib');
   const soundToggle = document.getElementById('sound-toggle');
@@ -53,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailClose = document.getElementById('detail-close');
   const chartRadar = document.getElementById('chart-radar');
   const chartChroma = document.getElementById('chart-chroma');
+  const analyzeRadar = document.getElementById('analyze-radar');
+  const analyzeChroma = document.getElementById('analyze-chroma');
   let lastLibrary = [];
 
   // WebAudio: gentle click sound
@@ -89,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
     detail.classList.add('show');
   }
   if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
+  // Drag & drop analyze
+  if (dropzone && input) {
+    dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e)=>{ e.preventDefault(); dropzone.classList.remove('dragover'); input.files = e.dataTransfer.files; toast(`${input.files.length} file(s) ready`); });
+  }
 
   function toast(message) {
     if (!toastEl) return;
@@ -120,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_) {}
     grid.innerHTML = pageState.slice.map(t => (
       `<div class="card">`+
-      (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:100%;height:120px;object-fit:cover;border-radius:10px"/>` : '')+
+      `<div class="wave-anim"></div>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
       `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
@@ -129,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `<div class="controls" style="margin-top:.5rem">`+
       `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
       `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
-      `<button data-tid="${t.id}" class="report-btn">Report</button>`+
+      `<button data-tid="${t.id}" class="report-btn">Report PDF</button>`+
       `</div>`+
       `</div>`
     )).join('');
@@ -220,10 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const tracks = j.tracks || [];
     reportsList.innerHTML = tracks.slice(0, 12).map(t => (
       `<div class="card">`+
-      `<div style="display:flex;align-items:center;gap:.5rem">`
-      `<svg width="20" height="20"><use href="./icons.svg#icon-note"/></svg>`+
-      `<div style="font-weight:600">${t.filename}</div>`+
-      `</div>`+
+      (t.spectrogram_png ? `<img class=\"thumb\" src=\"${t.spectrogram_png}\" alt=\"thumb\"/>` : ``)+
+      `<div style="font-weight:600;margin-top:.35rem">${t.filename}</div>`+
       `<div class="muted" style="font-size:.9rem">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
       `<div class="controls" style="margin-top:.5rem">`+
       `<button data-tid="${t.id}" class="preview-btn">Preview</button>`+
@@ -378,6 +385,15 @@ document.addEventListener('DOMContentLoaded', () => {
           `</div>`+
           `</div>`
         )).join('');
+
+        try {
+          const mod = await import('./charts.js');
+          const first = items[0];
+          if (first) {
+            mod.drawRadar(analyzeRadar, first.features?.mfcc_mean || []);
+            mod.drawBars(analyzeChroma, first.features?.chroma_mean || []);
+          }
+        } catch(_){}
 
         // Bind similar buttons
         for (const btn of results.querySelectorAll('.similar-btn')) {

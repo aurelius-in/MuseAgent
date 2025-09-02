@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.include_router(api_v1, prefix="/")
+    app.include_router(api_v1)
     # Warm-start background: rebuild embedding index
     try:
         from .api.v1 import warm_start  # type: ignore

@@ -1,0 +1,79 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+.Python
+
+# OS/IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# Build / dist / reports
+build/
+dist/
+site/
+htmlcov/
+.coverage*
+.pytest_cache/
+.mypy_cache/
+.cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# MuseAgent generated data
+museagent/backend/data/
+museagent/backend/reports/
+museagent/backend/embeddings/
+museagent/backend/models/
+# Python venv and caches
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env and local config
+.env
+.env.*
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+
+# Node (if present)
+node_modules/
+dist/
+build/
+

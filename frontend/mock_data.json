@@ -35,7 +35,10 @@
       "embedding_dim": 1024,
       "tags": {"mood":"calm","genre":"classical","instrumentation":["piano"]},
       "spectrogram_png": "/assets/ma-logo.png"
-    }
+    },
+    {"id":"demo-3","filename":"drums.wav","duration_sec":8.0,"tempo_bpm":128,"tempo_conf":0.8,"key_guess":"Em","features":{"mfcc_mean":[0.1,0.1,0.08,0.02,0.18,0.11,0.14,0.1,0.09,0.08,0.06,0.05,0.03],"mfcc_std":[0.05,0.06,0.04,0.03,0.07,0.05,0.06,0.05,0.04,0.03,0.03,0.02,0.02],"chroma_mean":[0.5,0.4,0.4,0.5,0.6,0.3,0.2,0.8,0.6,0.4,0.3,0.5],"spectral_contrast":[0.2,0.3,0.4,0.5,0.2,0.1,0.3],"tonnetz":[0.1,0.2,0.1,0.3,0.2,0.1]},"embedding_dim":1024,"tags":{"mood":"energetic","genre":"edm","instrumentation":["drums"]},"spectrogram_png":"/assets/ma-logo.png"},
+    {"id":"demo-4","filename":"bass.wav","duration_sec":9.2,"tempo_bpm":110,"tempo_conf":0.7,"key_guess":"Gm","features":{"mfcc_mean":[0.08,0.12,0.06,0.03,0.16,0.12,0.13,0.1,0.09,0.08,0.06,0.05,0.03],"mfcc_std":[0.04,0.05,0.03,0.02,0.05,0.04,0.05,0.04,0.03,0.03,0.02,0.02,0.02],"chroma_mean":[0.6,0.5,0.5,0.4,0.6,0.5,0.4,0.7,0.6,0.5,0.4,0.5],"spectral_contrast":[0.2,0.3,0.3,0.4,0.2,0.1,0.2],"tonnetz":[0.1,0.1,0.1,0.2,0.2,0.1]},"embedding_dim":1024,"tags":{"mood":"moody","genre":"hiphop","instrumentation":["bass"]},"spectrogram_png":"/assets/ma-logo.png"},
+    {"id":"demo-5","filename":"strings.wav","duration_sec":12.0,"tempo_bpm":72,"tempo_conf":0.6,"key_guess":"Dm","features":{"mfcc_mean":[0.05,0.08,0.06,0.02,0.12,0.09,0.11,0.1,0.08,0.07,0.05,0.04,0.03],"mfcc_std":[0.03,0.04,0.03,0.02,0.05,0.04,0.05,0.04,0.03,0.03,0.02,0.02,0.02],"chroma_mean":[0.5,0.5,0.5,0.4,0.5,0.5,0.4,0.6,0.6,0.5,0.4,0.5],"spectral_contrast":[0.2,0.3,0.3,0.4,0.2,0.1,0.2],"tonnetz":[0.1,0.1,0.1,0.2,0.2,0.1]},"embedding_dim":1024,"tags":{"mood":"calm","genre":"classical","instrumentation":["strings"]},"spectrogram_png":"/assets/ma-logo.png"}
   ]
 }
 

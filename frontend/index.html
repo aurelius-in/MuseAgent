@@ -30,7 +30,6 @@
     <header class="app-header">
       <div class="brand">
         <img class="brand-logo" src="/assets/ma-logo.png" alt="MuseAgent" />
-        <div class="brand-title">MuseAgent</div>
       </div>
       <nav class="app-nav" role="tablist" aria-label="Primary">
         <a href="#analyze" id="tab-analyze" class="tab" role="tab" aria-selected="true" aria-controls="panel-analyze">Analyze</a>
@@ -56,8 +55,8 @@
       <div id="panel-analyze" class="panel active" role="tabpanel" aria-labelledby="tab-analyze">
         <section class="card">
           <h2 style="margin-top:0">Analyze Tracks</h2>
-          <form id="upload-form">
-            <input id="file-input" type="file" multiple accept="audio/*" />
+          <form id="upload-form" class="row">
+            <input id="file-input" type="file" multiple accept="audio/*,video/*,.mp3,.wav,.flac,.mp4,.m4a" />
             <label class="toggle" style="margin-left:.5rem">
               <input id="enrich-toggle" type="checkbox" />
               <span class="slider"></span>
@@ -70,7 +69,12 @@
             </label>
             <button id="analyze-btn" type="submit">Analyze</button>
           </form>
+          <div id="dropzone" class="dropzone" style="margin-top:.75rem">Drop audio/video files here to analyze</div>
           <div id="results" style="margin-top:1rem"></div>
+          <div id="analyze-widgets" class="charts" style="margin-top:1rem">
+            <canvas id="analyze-radar" width="420" height="320"></canvas>
+            <canvas id="analyze-chroma" width="420" height="320"></canvas>
+          </div>
         </section>
       </div>
       <div id="panel-explore" class="panel" role="tabpanel" aria-labelledby="tab-explore">
@@ -91,6 +95,10 @@
             <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
           </div>
           <div id="reports-list" class="grid"></div>
+          <div id="reports-widgets" class="charts" style="margin-top:1rem">
+            <canvas id="reports-dist" width="420" height="320"></canvas>
+            <canvas id="reports-keys" width="420" height="320"></canvas>
+          </div>
         </section>
       </div>
       <div id="panel-more" class="panel" role="tabpanel" aria-labelledby="tab-more">
