@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadLibrary(page=1) {
     if (!grid) return;
     grid.innerHTML = '<div class="skeleton" style="height:140px"></div>';
-    const j = await (async () => {
+    let j = await (async () => {
       if (offlineToggle && offlineToggle.checked) {
         const res = await fetch('./mock_data.json');
         return res.json();
@@ -253,6 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.json();
       }
     })();
+    // Fallback: if no tracks returned (empty or error), try mock data to ensure Explore stays populated
+    try { if (!j || !Array.isArray(j.tracks) || j.tracks.length === 0) { const r = await fetch('./mock_data.json'); const jm = await r.json(); if (jm && Array.isArray(jm.tracks)) j = jm; } } catch(_) {}
     let tracks = j.tracks || [];
     // Search by filename or mood
     try {
