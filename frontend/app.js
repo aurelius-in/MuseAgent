@@ -52,6 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterBpmMin = document.getElementById('filter-bpm-min');
   const filterBpmMax = document.getElementById('filter-bpm-max');
   const applyFilters = document.getElementById('apply-filters');
+  const selectToggle = document.getElementById('select-toggle');
+  const tagSelectedBtn = document.getElementById('tag-selected-btn');
+  const compareBtn = document.getElementById('compare-btn');
+  const smartPlaylistBtn = document.getElementById('smart-playlist-btn');
+  const shortcutsBtn = document.getElementById('shortcuts-btn');
+  const shortcuts = document.getElementById('shortcuts');
+  const shortcutsClose = document.getElementById('shortcuts-close');
   const exportJsonBtn = document.getElementById('export-json');
   const exportCsvBtn = document.getElementById('export-csv');
   const toastEl = document.getElementById('toast');
@@ -71,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatForm = document.getElementById('chat-form');
   const chatText = document.getElementById('chat-text');
   let lastLibrary = [];
+  let selectionMode = false;
+  const selectedIds = new Set();
 
   // WebAudio: gentle click sound
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -156,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pageState = mod.paginate(tracks, page, 8);
     } catch(_) {}
     grid.innerHTML = pageState.slice.map((t,i) => (
-      `<div class="card">`+
+      `<div class="card ${selectionMode?'selectable':''}" data-tid="${t.id}">`+
       `<div class="wave-anim" style="animation-duration:${2 + (i%5)*0.3}s;opacity:${0.8 - (i%6)*0.05}"></div>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
@@ -178,6 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(_) {}
 
     // Bind actions
+    if (selectionMode){
+      grid.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', (e)=>{
+          if (!selectionMode) return;
+          const tid = card.getAttribute('data-tid');
+          if (selectedIds.has(tid)) { selectedIds.delete(tid); card.classList.remove('selected'); }
+          else { selectedIds.add(tid); card.classList.add('selected'); }
+        });
+      });
+    }
     grid.querySelectorAll('.detail-btn').forEach(btn => btn.addEventListener('click', (ev) => {
       playClick();
       const tid = ev.currentTarget.getAttribute('data-tid');
@@ -211,6 +230,86 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
   if (applyFilters) applyFilters.addEventListener('click', ()=> { playClick(); loadLibrary(1); });
+  if (selectToggle) selectToggle.addEventListener('click', ()=> { selectionMode = !selectionMode; toast(selectionMode? 'Selection ON' : 'Selection OFF'); loadLibrary(); });
+  if (shortcutsBtn && shortcuts) shortcutsBtn.addEventListener('click', ()=> shortcuts.classList.add('show'));
+  if (shortcutsClose && shortcuts) shortcutsClose.addEventListener('click', ()=> shortcuts.classList.remove('show'));
+
+  if (tagSelectedBtn) tagSelectedBtn.addEventListener('click', async ()=>{
+    if (!selectedIds.size) { toast('Select some tracks first'); return; }
+    const mood = prompt('Enter mood tag for selected (e.g., chill, energetic)');
+    if (!mood) return;
+    lastLibrary.forEach(t=>{ if (selectedIds.has(t.id)) { t.tags = t.tags || {}; t.tags.mood = mood; } });
+    toast(`Tagged ${selectedIds.size} track(s) with '${mood}'`);
+    loadLibrary();
+  });
+
+  if (compareBtn) compareBtn.addEventListener('click', ()=>{
+    if (selectedIds.size !== 2) { toast('Select exactly 2 tracks'); return; }
+    const [aId,bId] = Array.from(selectedIds);
+    const a = lastLibrary.find(x=>x.id===aId); const b = lastLibrary.find(x=>x.id===bId);
+    if (!a || !b) return;
+    const modal = document.createElement('div'); modal.className='detail show';
+    modal.innerHTML = `
+      <div class="detail-inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <h3 style="margin:0">Compare A/B</h3>
+          <button id="cmp-close">Close</button>
+        </div>
+        <div class="grid">
+          <div class="card"><b>${a.filename}</b><div class="muted">BPM ${a.tempo_bpm} • Key ${a.key_guess}</div><canvas id="cmp-a-radar" width="360" height="260"></canvas></div>
+          <div class="card"><b>${b.filename}</b><div class="muted">BPM ${b.tempo_bpm} • Key ${b.key_guess}</div><canvas id="cmp-b-radar" width="360" height="260"></canvas></div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    import('./charts.js').then(mod=>{
+      mod.drawRadar(document.getElementById('cmp-a-radar'), a.features?.mfcc_mean || []);
+      mod.drawRadar(document.getElementById('cmp-b-radar'), b.features?.mfcc_mean || []);
+    }).catch(()=>{});
+    modal.querySelector('#cmp-close').addEventListener('click', ()=> modal.remove());
+  });
+
+  if (smartPlaylistBtn) smartPlaylistBtn.addEventListener('click', ()=>{
+    if (!lastLibrary.length) { toast('No tracks loaded'); return; }
+    const start = lastLibrary[0];
+    const remaining = lastLibrary.slice(1);
+    const order = [start];
+    let cur = start;
+    while (remaining.length){
+      let bestIdx = 0, bestD = Infinity;
+      for (let i=0;i<remaining.length;i++){
+        const d = l2(cur.features.mfcc_mean, remaining[i].features.mfcc_mean);
+        if (d < bestD){ bestD = d; bestIdx = i; }
+      }
+      const next = remaining.splice(bestIdx,1)[0];
+      order.push(next); cur = next;
+    }
+    const modal = document.createElement('div'); modal.className='detail show';
+    modal.innerHTML = `
+      <div class="detail-inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <h3 style="margin:0">Smart Playlist</h3>
+          <button id="pl-close">Close</button>
+        </div>
+        <ol id="playlist-ol" style="padding-left:1.2rem"></ol>
+      </div>`;
+    document.body.appendChild(modal);
+    const ol = modal.querySelector('#playlist-ol');
+    ol.innerHTML = order.map(t=>`<li>${t.filename} <span class="muted">(${t.tempo_bpm} bpm • ${t.key_guess})</span></li>`).join('');
+    modal.querySelector('#pl-close').addEventListener('click', ()=> modal.remove());
+  });
+
+  // Tone preview on detail key
+  function playToneForKey(key){
+    const map = {C:261.63,'C#':277.18,Db:277.18,D:293.66,'D#':311.13,Eb:311.13,E:329.63,F:349.23,'F#':369.99,Gb:369.99,G:392.00,'G#':415.30,Ab:415.30,A:440.00,'A#':466.16,Bb:466.16,B:493.88,Am:440.00,Em:329.63,Dm:293.66,Gm:392.00};
+    const f = map[key] || 440.0;
+    audioCtx = audioCtx || new AudioContext();
+    const o = audioCtx.createOscillator(); const g=audioCtx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+    o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.42);
+  }
   // Initial load
   loadLibrary().catch(() => {});
 

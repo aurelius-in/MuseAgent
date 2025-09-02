@@ -151,6 +151,10 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .card { transition: transform 180ms ease, box-shadow 180ms ease; }
 .card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
 
+/* Selection styles */
+.card.selectable { cursor: pointer; }
+.card.selected { outline: 2px solid var(--ma-fg); box-shadow: 0 0 0 3px rgba(242,212,96,0.25); }
+
 /* Utility rows that wrap gracefully */
 .row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .row > * { flex: 0 1 auto; }
@@ -219,6 +223,11 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
   z-index: 1400;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(-2px); pointer-events: auto; }
+
+/* Shortcuts overlay */
+.overlay { position: fixed; inset:0; background: rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; z-index:1600; }
+.overlay.show { display:flex; }
+.overlay-inner { width:min(720px,92vw); background: var(--ma-surface); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:1rem; }
 
 /* Header actions */
 .header-actions { margin-left: auto; display:flex; align-items:center; gap:1rem; }

@@ -90,6 +90,11 @@
               <input id="filter-bpm-max" type="number" placeholder="Max" style="width:70px"/>
               <button id="apply-filters">Apply</button>
               <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+              <button id="select-toggle" title="Toggle selection mode">Select</button>
+              <button id="tag-selected-btn" title="Tag selected tracks">Tag Selected</button>
+              <button id="compare-btn" title="Compare two selected (A/B)">Compare A/B</button>
+              <button id="smart-playlist-btn" title="Generate Smart Playlist">Smart Playlist</button>
+              <button id="shortcuts-btn" title="Keyboard Shortcuts">Shortcuts</button>
             </div>
           </div>
           <div id="grid" class="grid" style="margin-top:1rem"></div>
@@ -155,6 +160,25 @@
           <input id="chat-text" type="text" placeholder="Ask about tempo, key, mood, or recommendations..." />
           <button type="submit">Send</button>
         </form>
+      </div>
+    </div>
+
+    <!-- Shortcuts overlay -->
+    <div id="shortcuts" class="overlay">
+      <div class="overlay-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <h3 style="margin:0">Keyboard Shortcuts</h3>
+          <button id="shortcuts-close">Close</button>
+        </div>
+        <ul class="muted" style="line-height:1.6">
+          <li>Ctrl + Arrow Left/Right: Switch tabs</li>
+          <li>S: Toggle selection mode</li>
+          <li>A: Select all visible</li>
+          <li>T: Tag selected</li>
+          <li>P: Generate Smart Playlist</li>
+          <li>/: Open Chat</li>
+          <li>Esc: Close dialogs</li>
+        </ul>
       </div>
     </div>
 
