@@ -34,8 +34,6 @@
       <nav class="app-nav" role="tablist" aria-label="Primary">
         <a href="#analyze" id="tab-analyze" class="tab" role="tab" aria-selected="true" aria-controls="panel-analyze">Analyze</a>
         <a href="#explore" id="tab-explore" class="tab" role="tab" aria-selected="false" aria-controls="panel-explore">Explore</a>
-        <a href="#reports" id="tab-reports" class="tab" role="tab" aria-selected="false" aria-controls="panel-reports">Reports</a>
-        <a href="#more" id="tab-more" class="tab hidden" role="tab" aria-selected="false" aria-controls="panel-more">More</a>
       </nav>
       <div class="header-actions">
         <label class="toggle">
@@ -76,6 +74,26 @@
             <canvas id="analyze-radar" width="420" height="320"></canvas>
             <canvas id="analyze-chroma" width="420" height="320"></canvas>
           </div>
+          <div class="card" style="margin-top:1rem">
+            <h2 style="margin:0 0 .5rem 0">Reports</h2>
+            <div class="controls" style="margin-bottom:.5rem">
+              <button id="export-json">Export JSON</button>
+              <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
+            </div>
+            <div class="reports-split">
+              <aside id="reports-sidebar" class="reports-sidebar" aria-label="Report files list"></aside>
+              <section id="reports-detail" class="reports-detail" aria-label="Report detail">
+                <div id="report-meta" class="muted" style="margin-bottom:.5rem"></div>
+                <div class="charts">
+                  <canvas id="reports-dist" width="420" height="320"></canvas>
+                  <canvas id="reports-keys" width="420" height="320"></canvas>
+                </div>
+                <div class="charts" style="margin-top:1rem">
+                  <canvas id="reports-map" width="420" height="320"></canvas>
+                </div>
+              </section>
+            </div>
+          </div>
         </section>
       </div>
       <div id="panel-explore" class="panel" role="tabpanel" aria-labelledby="tab-explore">
@@ -95,43 +113,20 @@
               <button id="tag-selected-btn" title="Tag selected tracks">Tag Selected</button>
               <button id="compare-btn" title="Compare two selected (A/B)">Compare A/B</button>
               <button id="smart-playlist-btn" title="Generate Smart Playlist">Smart Playlist</button>
+              <button id="prompt-playlist-btn" title="Build playlist from prompt">Prompt Playlist</button>
+              <button id="map-toggle-btn" title="Show similarity map">Map</button>
               <button id="shortcuts-btn" title="Keyboard Shortcuts">Shortcuts</button>
             </div>
           </div>
           <div id="grid" class="grid" style="margin-top:1rem"></div>
           <div id="pager" class="row" style="margin-top:.5rem"></div>
+          <section id="map-section" class="card" style="margin-top:1rem; display:none">
+            <h3 style="margin:0 0 .5rem 0">Similarity Map</h3>
+            <canvas id="map-canvas" width="900" height="420"></canvas>
+          </section>
         </section>
       </div>
-      <div id="panel-reports" class="panel" role="tabpanel" aria-labelledby="tab-reports">
-        <section class="card">
-          <h2 style="margin-top:0">Reports</h2>
-          <div class="controls" style="margin-bottom:.5rem">
-            <button id="export-json">Export JSON</button>
-            <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
-          </div>
-          <div class="reports-split">
-            <aside id="reports-sidebar" class="reports-sidebar" aria-label="Report files list"></aside>
-            <section id="reports-detail" class="reports-detail" aria-label="Report detail">
-              <div id="report-meta" class="muted" style="margin-bottom:.5rem"></div>
-              <div class="charts">
-                <canvas id="reports-dist" width="420" height="320"></canvas>
-                <canvas id="reports-keys" width="420" height="320"></canvas>
-              </div>
-              <div class="charts" style="margin-top:1rem">
-                <canvas id="reports-map" width="420" height="320"></canvas>
-              </div>
-            </section>
-          </div>
-        </section>
-      </div>
-      <div id="panel-more" class="panel" role="tabpanel" aria-labelledby="tab-more">
-        <section class="card">
-          <h2 style="margin-top:0">More</h2>
-          <div id="results-more" style="margin-top:1rem"></div>
-          <div id="grid-more" class="grid" style="margin-top:1rem"></div>
-          <div id="reports-more" class="grid" style="margin-top:1rem"></div>
-        </section>
-      </div>
+      
     </main>
 
     <!-- Detail modal -->
