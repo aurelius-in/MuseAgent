@@ -141,6 +141,7 @@ button {
   box-shadow: 0 0 0 rgba(242,212,96,0);
   font-weight: 700;
 }
+button.fav-active { border-color: var(--ma-fg); color: var(--ma-fg); }
 button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 
 /* Logo pulse tint every 10s for 1s */

@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastLibrary = [];
   let selectionMode = false;
   const selectedIds = new Set();
+  const favorites = new Set();
 
   // WebAudio: gentle click sound
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -275,6 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
       `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
       `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
       `<button data-tid="${t.id}" class="report-btn">Report (PDF)</button>`+
+      `<button data-tid="${t.id}" class="loop-btn">Loop ▶</button>`+
+      `<button data-tid="${t.id}" class="fav-btn ${favorites.has(t.id)?'fav-active':''}">★</button>`+
       `</div>`+
       `</div>`
     )).join('');
@@ -327,6 +330,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
       const j = await r.json();
       if (j.pdf) window.open(j.pdf, '_blank');
+    }));
+
+    // Loop preview
+    grid.querySelectorAll('.loop-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      const t = lastLibrary.find(x=>x.id===tid);
+      if (!t) return;
+      const url = t.loop || t.preview || t.spectrogram_png || null;
+      if (!url){ toast('No loop available'); return; }
+      try {
+        const audio = new Audio(url);
+        audio.loop = true; audio.play();
+        toast('Playing loop...');
+      } catch(_){ toast('Failed to play'); }
+    }));
+
+    // Favorites
+    grid.querySelectorAll('.fav-btn').forEach(btn => btn.addEventListener('click', (ev)=>{
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      if (favorites.has(tid)) { favorites.delete(tid); ev.currentTarget.classList.remove('fav-active'); }
+      else { favorites.add(tid); ev.currentTarget.classList.add('fav-active'); }
     }));
   }
   if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
