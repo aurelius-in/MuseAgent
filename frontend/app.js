@@ -155,9 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const mod = await import('./pagination.js');
       pageState = mod.paginate(tracks, page, 8);
     } catch(_) {}
-    grid.innerHTML = pageState.slice.map(t => (
+    grid.innerHTML = pageState.slice.map((t,i) => (
       `<div class="card">`+
-      `<div class="wave-anim"></div>`+
+      `<div class="wave-anim" style="animation-duration:${2 + (i%5)*0.3}s;opacity:${0.8 - (i%6)*0.05}"></div>`+
       `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">`+
       `<div style="font-weight:600">${t.filename}</div>`+
       `<span class="badge badge-muted">${t.tempo_bpm} bpm</span>`+
@@ -316,18 +316,28 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })();
     const tracks = j.tracks || [];
-    reportsList.innerHTML = tracks.slice(0, 12).map(t => (
-      `<div class="card">`+
-      (t.spectrogram_png ? `<img class=\"thumb\" src=\"${t.spectrogram_png}\" alt=\"thumb\"/>` : ``)+
-      `<div style="font-weight:600;margin-top:.35rem">${t.filename}</div>`+
-      `<div class="muted" style="font-size:.9rem">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
-      `<div class="controls" style="margin-top:.5rem">`+
-      `<button data-tid="${t.id}" class="preview-btn">Preview</button>`+
-      `<button data-tid="${t.id}" class="report-btn">Open PDF</button>`+
-      `</div>`+
-      `</div>`
-    )).join('');
-    reportsList.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+    // Build sidebar + select first detail
+    const sidebar = document.getElementById('reports-sidebar');
+    const detailMeta = document.getElementById('report-meta');
+    if (sidebar) sidebar.innerHTML = tracks.map((t,idx)=>`<a href="#" class="report-item ${idx===0?'active':''}" data-tid="${t.id}">${t.filename}</a>`).join('');
+    function selectReport(tid){
+      const t = tracks.find(x=>x.id===tid) || tracks[0];
+      if (!t) return;
+      document.querySelectorAll('.report-item').forEach(el=> el.classList.remove('active'));
+      const cur = document.querySelector(`.report-item[data-tid="${tid}"]`);
+      if (cur) cur.classList.add('active');
+      if (detailMeta) detailMeta.textContent = `BPM ${t.tempo_bpm} • Key ${t.key_guess} • Mood ${t.tags?.mood||''}`;
+      try { import('./charts.js').then(mod => {
+        mod.drawBars(document.getElementById('reports-dist'), t.features?.chroma_mean || []);
+        mod.drawRadar(document.getElementById('reports-keys'), t.features?.mfcc_mean || []);
+      }); } catch(_){ }
+    }
+    if (sidebar){
+      sidebar.querySelectorAll('.report-item').forEach(a => a.addEventListener('click', (e)=>{ e.preventDefault(); selectReport(a.getAttribute('data-tid')); }));
+      if (tracks[0]) selectReport(tracks[0].id);
+    }
+    // The export buttons remain
+    document.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
       playClick();
       const tid = ev.currentTarget.getAttribute('data-tid');
       if (offlineToggle && offlineToggle.checked){ toast('Offline demo: report disabled'); return; }

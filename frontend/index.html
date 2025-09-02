@@ -41,12 +41,12 @@
         <label class="toggle">
           <input id="sound-toggle" type="checkbox" />
           <span class="slider"></span>
-          <span class="label">Sound</span>
+          <span class="label">Mute</span>
         </label>
         <label class="toggle">
           <input id="offline-toggle" type="checkbox" checked />
           <span class="slider"></span>
-          <span class="label">Offline</span>
+          <span class="label">Online</span>
         </label>
         <button id="open-chat" title="Ask MuseAgent">Chat</button>
       </div>
@@ -103,10 +103,15 @@
             <button id="export-json">Export JSON</button>
             <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
           </div>
-          <div id="reports-list" class="grid"></div>
-          <div id="reports-widgets" class="charts" style="margin-top:1rem">
-            <canvas id="reports-dist" width="420" height="320"></canvas>
-            <canvas id="reports-keys" width="420" height="320"></canvas>
+          <div class="reports-split">
+            <aside id="reports-sidebar" class="reports-sidebar" aria-label="Report files list"></aside>
+            <section id="reports-detail" class="reports-detail" aria-label="Report detail">
+              <div id="report-meta" class="muted" style="margin-bottom:.5rem"></div>
+              <div class="charts">
+                <canvas id="reports-dist" width="420" height="320"></canvas>
+                <canvas id="reports-keys" width="420" height="320"></canvas>
+              </div>
+            </section>
           </div>
         </section>
       </div>
