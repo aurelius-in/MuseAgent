@@ -97,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('./mock_data.json');
         return res.json();
       } else {
-        const res = await fetch('/library');
+        const qs = new URLSearchParams({ page: String(page), per_page: '8' });
+        const res = await fetch('/library?' + qs.toString());
         return res.json();
       }
     })();
@@ -169,12 +170,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Hash-based tabs
   function setActiveTab(name) {
-    [tabAnalyze, tabExplore, tabReports, tabMore].forEach(el => el && el.classList.remove('active'));
+    [tabAnalyze, tabExplore, tabReports, tabMore].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
     [panelAnalyze, panelExplore, panelReports, panelMore].forEach(el => el && el.classList.remove('active'));
-    if (name === 'explore') { tabExplore?.classList.add('active'); panelExplore?.classList.add('active'); maybeSplit('explore'); }
-    else if (name === 'reports') { tabReports?.classList.add('active'); panelReports?.classList.add('active'); renderReports(); maybeSplit('reports'); }
-    else if (name === 'more') { tabMore?.classList.add('active'); panelMore?.classList.add('active'); }
-    else { tabAnalyze?.classList.add('active'); panelAnalyze?.classList.add('active'); }
+    if (name === 'explore') { if (tabExplore){ tabExplore.classList.add('active'); tabExplore.setAttribute('aria-selected','true'); } panelExplore?.classList.add('active'); maybeSplit('explore'); }
+    else if (name === 'reports') { if (tabReports){ tabReports.classList.add('active'); tabReports.setAttribute('aria-selected','true'); } panelReports?.classList.add('active'); renderReports(); maybeSplit('reports'); }
+    else if (name === 'more') { if (tabMore){ tabMore.classList.add('active'); tabMore.setAttribute('aria-selected','true'); } panelMore?.classList.add('active'); }
+    else { if (tabAnalyze){ tabAnalyze.classList.add('active'); tabAnalyze.setAttribute('aria-selected','true'); } panelAnalyze?.classList.add('active'); }
   }
   function onHashChange() {
     const name = (location.hash || '#analyze').replace('#','');
