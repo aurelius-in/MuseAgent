@@ -60,6 +60,7 @@
             <span id="ntotal" class="muted"></span>
           </span>
         </div>
+        <button id="open-apikey" title="Set API Key" style="margin-left:.5rem">API Key</button>
       </div>
     </header>
 
@@ -201,6 +202,21 @@
           <li>/: Open Chat</li>
           <li>Esc: Close dialogs</li>
         </ul>
+      </div>
+    </div>
+
+    <!-- API key overlay -->
+    <div id="apikey" class="overlay">
+      <div class="overlay-inner">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <h3 style="margin:0">API Key</h3>
+          <button id="apikey-close">Close</button>
+        </div>
+        <div class="row" style="margin-bottom:.5rem">
+          <input id="api-key-input" type="text" placeholder="Enter API key" style="min-width:280px"/>
+          <button id="api-key-save">Save</button>
+        </div>
+        <div class="muted">Used for authenticated API requests when Online.</div>
       </div>
     </div>
 

@@ -155,6 +155,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   [soundToggle, offlineToggle, enrichToggle, generateToggle].forEach(el => el && el.addEventListener('change', syncLabels));
   syncLabels();
+  // Header export handlers (works both online/offline)
+  if (exportJsonBtn) exportJsonBtn.onclick = async () => {
+    try {
+      if (offlineToggle && offlineToggle.checked) {
+        const res = await fetch('./mock_data.json');
+        const j = await res.json();
+        const blob = new Blob([JSON.stringify(j, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'library.json'; a.click(); URL.revokeObjectURL(url); toast('Exported JSON');
+      } else {
+        const r = await fetch('/export?fmt=json'); const j = await r.json(); if (j.path) { window.open(j.path, '_blank'); toast('Exporting JSON'); } else { toast('Export failed'); }
+      }
+    } catch(_) { toast('Export failed'); }
+  };
+  if (exportCsvBtn) exportCsvBtn.onclick = async () => {
+    try {
+      if (offlineToggle && offlineToggle.checked) {
+        const res = await fetch('./mock_data.json'); const j = await res.json(); const tracks = j.tracks || [];
+        const header = ['id','filename','duration_sec','tempo_bpm','tempo_conf','key_guess','embedding_dim'];
+        const rows = tracks.map(t => header.map(h => t[h] ?? '').join(','));
+        const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'library.csv'; a.click(); URL.revokeObjectURL(url); toast('Exported CSV');
+      } else {
+        const r = await fetch('/export?fmt=csv'); const j = await r.json(); if (j.path) { window.open(j.path, '_blank'); toast('Exporting CSV'); } else { toast('Export failed'); }
+      }
+    } catch(_) { toast('Export failed'); }
+  };
   // Status polling
   async function refreshStatus(){
     try {
