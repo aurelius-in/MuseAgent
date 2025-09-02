@@ -39,14 +39,18 @@
         <label class="toggle">
           <input id="sound-toggle" type="checkbox" />
           <span class="slider"></span>
-          <span class="label">Mute</span>
+          <span id="label-sound" class="label">Mute</span>
         </label>
         <label class="toggle">
           <input id="offline-toggle" type="checkbox" checked />
           <span class="slider"></span>
-          <span class="label">Online</span>
+          <span id="label-offline" class="label">Online</span>
         </label>
         <button id="open-chat" title="Ask MuseAgent">Chat</button>
+        <div class="header-exports" style="margin-left:1rem;display:flex;gap:.5rem">
+          <button id="export-json">Export JSON</button>
+          <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
+        </div>
       </div>
     </header>
 
@@ -59,12 +63,12 @@
             <label class="toggle" style="margin-left:.5rem">
               <input id="enrich-toggle" type="checkbox" />
               <span class="slider"></span>
-              <span class="label">Enrich</span>
+              <span id="label-enrich" class="label">Enrich</span>
             </label>
             <label class="toggle" style="margin-left:.5rem">
               <input id="generate-toggle" type="checkbox" />
               <span class="slider"></span>
-              <span class="label">Generate</span>
+              <span id="label-generate" class="label">Generate</span>
             </label>
             <button id="analyze-btn" type="submit">Analyze</button>
           </form>
@@ -74,26 +78,7 @@
             <canvas id="analyze-radar" width="420" height="320"></canvas>
             <canvas id="analyze-chroma" width="420" height="320"></canvas>
           </div>
-          <div class="card" style="margin-top:1rem">
-            <h2 style="margin:0 0 .5rem 0">Reports</h2>
-            <div class="controls" style="margin-bottom:.5rem">
-              <button id="export-json">Export JSON</button>
-              <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
-            </div>
-            <div class="reports-split">
-              <aside id="reports-sidebar" class="reports-sidebar" aria-label="Report files list"></aside>
-              <section id="reports-detail" class="reports-detail" aria-label="Report detail">
-                <div id="report-meta" class="muted" style="margin-bottom:.5rem"></div>
-                <div class="charts">
-                  <canvas id="reports-dist" width="420" height="320"></canvas>
-                  <canvas id="reports-keys" width="420" height="320"></canvas>
-                </div>
-                <div class="charts" style="margin-top:1rem">
-                  <canvas id="reports-map" width="420" height="320"></canvas>
-                </div>
-              </section>
-            </div>
-          </div>
+          
           <div class="card" style="margin-top:1rem">
             <h2 style="margin:0 0 .5rem 0">AI Agents</h2>
             <div class="controls" style="margin-bottom:.5rem">

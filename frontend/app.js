@@ -36,6 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const offlineToggle = document.getElementById('offline-toggle');
   const enrichToggle = document.getElementById('enrich-toggle');
   const generateToggle = document.getElementById('generate-toggle');
+  const labelSound = document.getElementById('label-sound');
+  const labelOffline = document.getElementById('label-offline');
+  const labelEnrich = document.getElementById('label-enrich');
+  const labelGenerate = document.getElementById('label-generate');
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
   const tabReports = null;
@@ -132,6 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
     detail.classList.add('show');
   }
   if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
+  // Toggle label syncing
+  function syncLabels(){
+    if (labelSound && soundToggle) labelSound.textContent = soundToggle.checked ? 'Mute' : 'Sound';
+    if (labelOffline && offlineToggle) labelOffline.textContent = offlineToggle.checked ? 'Online' : 'Offline';
+    if (labelEnrich && enrichToggle) labelEnrich.textContent = enrichToggle.checked ? 'Enrich' : 'Raw';
+    if (labelGenerate && generateToggle) labelGenerate.textContent = generateToggle.checked ? 'Generate' : 'Static';
+  }
+  [soundToggle, offlineToggle, enrichToggle, generateToggle].forEach(el => el && el.addEventListener('change', syncLabels));
+  syncLabels();
   // Drag & drop analyze
   if (dropzone && input) {
     dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
