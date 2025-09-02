@@ -167,6 +167,23 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 
+/* Toasts */
+.toast {
+  position: fixed;
+  left: 50%; bottom: 20px;
+  transform: translateX(-50%);
+  background: var(--ma-surface);
+  color: var(--ma-text);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  box-shadow: 0 12px 34px rgba(0,0,0,0.35);
+  opacity: 0; pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+  z-index: 1400;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-2px); pointer-events: auto; }
+
 /* Header actions */
 .header-actions { margin-left: auto; display:flex; align-items:center; gap:1rem; }
 .toggle { position: relative; display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; }
