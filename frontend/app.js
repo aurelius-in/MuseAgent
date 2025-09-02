@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const reloadLib = document.getElementById('reload-lib');
   const soundToggle = document.getElementById('sound-toggle');
   const offlineToggle = document.getElementById('offline-toggle');
+  const enrichToggle = document.getElementById('enrich-toggle');
+  const generateToggle = document.getElementById('generate-toggle');
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
   const tabReports = document.getElementById('tab-reports');
@@ -334,7 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const mod = await import('./offline.js');
             return mod.analyzeMock(files);
           } else {
-            const res = await fetch('/analyze', { method: 'POST', body: fd });
+            const qs = new URLSearchParams();
+            if (enrichToggle && enrichToggle.checked) qs.set('enrich','true');
+            if (generateToggle && generateToggle.checked) qs.set('generate','true');
+            const res = await fetch('/analyze' + (qs.toString()?`?${qs}`:''), { method: 'POST', body: fd });
             return res.json();
           }
         })();
