@@ -238,6 +238,9 @@ button:hover { box-shadow: 0 0 18px rgba(242,212,96,0.25); }
 .player-progress { flex:2; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; }
 .player-progress > span { display:block; height:100%; background: var(--ma-fg); width: 0%; }
 
+/* Similarity map */
+#map-canvas { width: 100%; height: auto; background: rgba(255,255,255,0.03); border-radius: 12px; }
+
 /* Header actions */
 .header-actions { margin-left: auto; display:flex; align-items:center; gap:1rem; }
 .toggle { position: relative; display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; }

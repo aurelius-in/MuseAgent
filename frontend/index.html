@@ -95,11 +95,17 @@
               <button id="tag-selected-btn" title="Tag selected tracks">Tag Selected</button>
               <button id="compare-btn" title="Compare two selected (A/B)">Compare A/B</button>
               <button id="smart-playlist-btn" title="Generate Smart Playlist">Smart Playlist</button>
+              <button id="prompt-playlist-btn" title="Build playlist from prompt">Prompt Playlist</button>
+              <button id="map-toggle-btn" title="Show similarity map">Map</button>
               <button id="shortcuts-btn" title="Keyboard Shortcuts">Shortcuts</button>
             </div>
           </div>
           <div id="grid" class="grid" style="margin-top:1rem"></div>
           <div id="pager" class="row" style="margin-top:.5rem"></div>
+          <section id="map-section" class="card" style="margin-top:1rem; display:none">
+            <h3 style="margin:0 0 .5rem 0">Similarity Map</h3>
+            <canvas id="map-canvas" width="900" height="420"></canvas>
+          </section>
         </section>
       </div>
       <div id="panel-reports" class="panel" role="tabpanel" aria-labelledby="tab-reports">

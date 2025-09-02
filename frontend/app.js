@@ -60,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const shortcuts = document.getElementById('shortcuts');
   const shortcutsClose = document.getElementById('shortcuts-close');
   const search = document.getElementById('search');
+  const promptPlaylistBtn = document.getElementById('prompt-playlist-btn');
+  const mapToggleBtn = document.getElementById('map-toggle-btn');
   // Mini player controls
   const player = document.getElementById('player');
   const playerTitle = document.getElementById('player-title');
@@ -330,6 +332,72 @@ document.addEventListener('DOMContentLoaded', () => {
     ol.innerHTML = order.map(t=>`<li>${t.filename} <span class="muted">(${t.tempo_bpm} bpm • ${t.key_guess})</span></li>`).join('');
     modal.querySelector('#pl-close').addEventListener('click', ()=> modal.remove());
   });
+
+  // Prompt-based playlist: simple rule-based filter on tags and tempo
+  if (promptPlaylistBtn) promptPlaylistBtn.addEventListener('click', ()=>{
+    if (!lastLibrary.length) { toast('No tracks loaded'); return; }
+    const p = prompt('Describe the playlist (e.g., "fast energetic minor key")');
+    if (!p) return;
+    const wantFast = /fast|quick|upbeat|energetic/.test(p.toLowerCase());
+    const wantSlow = /slow|chill|ambient|calm/.test(p.toLowerCase());
+    const wantMinor = /minor|dark/.test(p.toLowerCase());
+    const wantMajor = /major|happy|bright/.test(p.toLowerCase());
+    const out = lastLibrary.filter(t => {
+      const bpm = t.tempo_bpm||0; const key = String(t.key_guess||''); const mood = String(t.tags?.mood||'').toLowerCase();
+      const okFast = !wantFast || bpm >= 120; const okSlow = !wantSlow || bpm <= 90;
+      const okMinor = !wantMinor || /m$/.test(key) || /dark/.test(mood);
+      const okMajor = !wantMajor || !/m$/.test(key);
+      return okFast && okSlow && okMinor && okMajor;
+    }).slice(0, 20);
+    if (!out.length) { toast('No matches for prompt'); return; }
+    const modal = document.createElement('div'); modal.className='detail show';
+    modal.innerHTML = `
+      <div class="detail-inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <h3 style="margin:0">Prompt Playlist</h3>
+          <button id="pp-close">Close</button>
+        </div>
+        <ol id="pp-ol" style="padding-left:1.2rem"></ol>
+      </div>`;
+    document.body.appendChild(modal);
+    const ol = modal.querySelector('#pp-ol');
+    ol.innerHTML = out.map(t=>`<li>${t.filename} <span class="muted">(${t.tempo_bpm} bpm • ${t.key_guess})</span></li>`).join('');
+    modal.querySelector('#pp-close').addEventListener('click', ()=> modal.remove());
+  });
+
+  // Similarity map (2D via naive PCA on MFCC means)
+  if (mapToggleBtn) mapToggleBtn.addEventListener('click', ()=>{
+    const sec = document.getElementById('map-section');
+    if (!sec) return;
+    sec.style.display = (sec.style.display === 'none' || !sec.style.display) ? 'block' : 'none';
+    if (sec.style.display === 'block') drawMap();
+  });
+  function drawMap(){
+    try {
+      const canvas = document.getElementById('map-canvas'); if (!canvas) return; const ctx = canvas.getContext('2d');
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const feats = lastLibrary.map(t => (t.features?.mfcc_mean || []).slice(0,12));
+      if (!feats.length) return;
+      // mean center
+      const dim = feats[0].length; const mean = new Array(dim).fill(0);
+      feats.forEach(v => v.forEach((x,i)=> mean[i]+=x)); mean.forEach((_,i)=> mean[i]/=feats.length);
+      const X = feats.map(v => v.map((x,i)=> x-mean[i]));
+      // naive 2D projection using first two dims (placeholder for PCA)
+      const pts = X.map(v => ({ x:v[0]||0, y:v[1]||0 }));
+      // scale to canvas
+      const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      const pad = 30;
+      function sx(val){ return pad + (val - minX) / (maxX - minX + 1e-6) * (canvas.width - pad*2); }
+      function sy(val){ return canvas.height - pad - (val - minY) / (maxY - minY + 1e-6) * (canvas.height - pad*2); }
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      lastLibrary.forEach((t,i)=>{
+        const x = sx(pts[i].x); const y = sy(pts[i].y);
+        ctx.fillStyle = 'rgba(242,212,96,0.9)'; ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillText(String(t.filename||'').slice(0,18), x+8, y-8);
+      });
+    } catch(_){ }
+  }
 
   // Mini player behavior (demo: cycles through visible list)
   function setPlayer(idx){
