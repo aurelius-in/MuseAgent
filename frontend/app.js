@@ -201,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `</div>`+
       `<div class="muted" style="font-size:.9rem">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
       `<div class="controls" style="margin-top:.5rem">`+
+      `<button data-tid="${t.id}" class="preview-btn">Preview</button>`+
       `<button data-tid="${t.id}" class="report-btn">Open PDF</button>`+
       `</div>`+
       `</div>`
@@ -208,9 +209,19 @@ document.addEventListener('DOMContentLoaded', () => {
     reportsList.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
       playClick();
       const tid = ev.currentTarget.getAttribute('data-tid');
+      if (offlineToggle && offlineToggle.checked){ alert('PDF reports are unavailable in offline demo.'); return; }
       const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
       const j = await r.json();
       if (j.pdf) window.open(j.pdf, '_blank');
+    }));
+
+    reportsList.querySelectorAll('.preview-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
+      playClick();
+      const tid = ev.currentTarget.getAttribute('data-tid');
+      if (offlineToggle && offlineToggle.checked){ alert('PDF preview is unavailable in offline demo.'); return; }
+      const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
+      const j = await r.json();
+      if (j.pdf) showPdfModal(j.pdf);
     }));
 
     if (exportJsonBtn) exportJsonBtn.onclick = async () => {
@@ -235,6 +246,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const r = await fetch('/export?fmt=csv'); const j = await r.json(); if (j.path) window.open(j.path, '_blank');
       }
     };
+  }
+
+  function showPdfModal(url){
+    const modal = document.createElement('div');
+    modal.className = 'detail show';
+    modal.innerHTML = `
+      <div class="detail-inner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <h3 style="margin:0">Report Preview</h3>
+          <div class="row">
+            <a href="${url}" target="_blank"><button>Open in Tab</button></a>
+            <button id="pdf-close">Close</button>
+          </div>
+        </div>
+        <iframe src="${url}" style="width:100%;height:70vh;border:none;border-radius:10px;background:white"></iframe>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#pdf-close').addEventListener('click', ()=> modal.remove());
   }
 
   // If a panel overflows viewport notably, move overflow content to More tab
