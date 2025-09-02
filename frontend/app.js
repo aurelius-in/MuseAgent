@@ -74,14 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const metroToggle = document.getElementById('metro-toggle');
   const keyTrainer = document.getElementById('key-trainer');
   const agentAutotag = document.getElementById('agent-autotag');
-  // Mini player controls
-  const player = document.getElementById('player');
-  const playerTitle = document.getElementById('player-title');
-  const playerBar = document.getElementById('player-bar');
-  const playerPlay = document.getElementById('player-play');
-  const playerPrev = document.getElementById('player-prev');
-  const playerNext = document.getElementById('player-next');
-  let playerIdx = 0; let playerTimer = null; let playing = false;
+  // Removed mini player controls
   const exportJsonBtn = null;
   const exportCsvBtn = null;
   const dotHealth = document.getElementById('dot-health');
@@ -232,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('./mock_data.json');
         return res.json();
       } else {
-        const qs = new URLSearchParams({ page: String(page), per_page: '8' });
+        const qs = new URLSearchParams({ page: String(page), per_page: '20' });
         const res = await fetch('/library?' + qs.toString());
         return res.json();
       }
@@ -262,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let pageState = { page, pages: 1, total: tracks.length, slice: tracks };
     try {
       const mod = await import('./pagination.js');
-      pageState = mod.paginate(tracks, page, 8);
+      pageState = mod.paginate(tracks, page, 20);
     } catch(_) {}
     grid.innerHTML = pageState.slice.map((t,i) => (
       `<div class="card ${selectionMode?'selectable':''}" data-tid="${t.id}">`+
@@ -276,6 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
       `</div>`+
       `<div class="muted" style="font-size:.9rem">Key ${t.key_guess} • ${t.tags?.mood || ''}</div>`+
       `<div class="controls" style="margin-top:.5rem">`+
+      `<button data-tid="${t.id}" class="play-btn" title="Play">▶</button>`+
+      `<button data-tid="${t.id}" class="pause-btn" title="Pause">⏸</button>`+
+      `<button data-tid="${t.id}" class="prev-btn" title="Rewind">⏮</button>`+
+      `<button data-tid="${t.id}" class="next-btn" title="Fast‑forward">⏭</button>`+
       `<button data-tid="${t.id}" class="detail-btn">Detail</button>`+
       `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
       `<button data-tid="${t.id}" class="report-btn">Report (PDF)</button>`+
@@ -349,6 +346,19 @@ document.addEventListener('DOMContentLoaded', () => {
         toast('Playing loop...');
       } catch(_){ toast('Failed to play'); }
     }));
+
+    // Transport per-card (demo: simple beeps using WebAudio)
+    function beep(freq, durMs){
+      audioCtx = audioCtx || new AudioContext();
+      const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+      o.type='sine'; o.frequency.value = freq; g.gain.value=0.001; g.gain.exponentialRampToValueAtTime(0.1, audioCtx.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (durMs||200)/1000);
+      o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + (durMs||200)/1000);
+    }
+    grid.querySelectorAll('.play-btn').forEach(btn=> btn.addEventListener('click', ()=> beep(660,220)));
+    grid.querySelectorAll('.pause-btn').forEach(btn=> btn.addEventListener('click', ()=> beep(330,140)));
+    grid.querySelectorAll('.prev-btn').forEach(btn=> btn.addEventListener('click', ()=> beep(440,160)));
+    grid.querySelectorAll('.next-btn').forEach(btn=> btn.addEventListener('click', ()=> beep(880,120)));
 
     // Favorites
     grid.querySelectorAll('.fav-btn').forEach(btn => btn.addEventListener('click', (ev)=>{
@@ -551,16 +561,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const list = document.getElementById('insights-list');
     const detail = document.getElementById('insight-detail');
     if (!list || !detail) return;
-    const reports = [
-      { id:'one-dance', title:'One Dance — Drake (Smart Report)', artist:'Drake', actions:['pdf'] },
-      { id:'library-overview', title:'Library Overview', artist:'All Artists', actions:['pdf'] },
-      { id:'mood-trends', title:'Mood Trends (Last 30)', artist:'Aggregate', actions:['pdf'] },
-    ];
-    list.innerHTML = reports.map(r=> `
-      <div class="item" data-id="${r.id}">
-        <h4>${r.title}</h4>
+    // Build from current library if available; otherwise show defaults
+    const items = (lastLibrary && lastLibrary.length ? lastLibrary : [
+      { id:'one-dance', filename:'Drake — One Dance', actions:['pdf'] }
+    ]);
+    list.innerHTML = items.map(t=> `
+      <div class="item" data-id="${t.id}">
+        <h4>${t.filename || t.title}</h4>
         <div class="controls">
-          <button data-act="pdf" data-id="${r.id}">Export PDF</button>
+          <button data-tid="${t.id}" class="small play">▶</button>
+          <button data-tid="${t.id}" class="small pause">⏸</button>
+          <button data-tid="${t.id}" class="small prev">⏮</button>
+          <button data-tid="${t.id}" class="small next">⏭</button>
+          <button data-act="pdf" data-id="${t.id}">Export PDF</button>
         </div>
       </div>`).join('');
 
@@ -641,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             ctx.closePath(); ctx.fillStyle = 'rgba(242,212,96,0.22)'; ctx.fill(); ctx.strokeStyle='rgba(242,212,96,0.8)'; ctx.stroke();
           }
-          // Mood map at bottom
+          // Mood map at bottom (multi-point: plot library energy/valence with highlight)
           const mood = document.getElementById('ins-mood');
           if (mood && mood.getContext){
             const ctx = mood.getContext('2d'); const w=mood.width, h=mood.height; ctx.clearRect(0,0,w,h);
@@ -649,11 +662,25 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(w-20,h-30); ctx.stroke(); ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(40,20); ctx.stroke();
             ctx.fillStyle='rgba(234,231,242,0.8)'; ctx.font='12px Montserrat,sans-serif'; ctx.fillText('Energy →', w-90, h-12);
             ctx.save(); ctx.translate(18, 40); ctx.rotate(-Math.PI/2); ctx.fillText('Valence →', 0,0); ctx.restore();
-            // compute point from tempo & mode
+            // background density (very light grid dots)
+            function px(e){ return 40 + e * (w-60); }
+            function py(v){ return (h-30) - v * (h-60); }
+            // plot all library items if available
+            const all = (lastLibrary||[]);
+            ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.font='10px Montserrat,sans-serif';
+            all.slice(0,80).forEach(t=>{
+              const e = Math.min(1, Math.max(0, (t.tempo_bpm||120)/200));
+              const minor = /m$/.test(String(t.key_guess||''));
+              const v = minor ? 0.35 : 0.7;
+              const x = px(e), y = py(v);
+              ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fillRect(x-1,y-1,2,2);
+            });
+            // highlight One Dance
             const tempo = 104; const energy = Math.min(1, Math.max(0, tempo/200));
             const isMinor = true; const valence = isMinor ? 0.45 : 0.7;
-            const x = 40 + energy * (w-60); const y = (h-30) - valence * (h-60);
-            ctx.fillStyle='rgba(242,212,96,0.9)'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+            const x = px(energy); const y = py(valence);
+            ctx.fillStyle='rgba(242,212,96,0.95)'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='rgba(242,212,96,0.9)'; ctx.fillText('One Dance', x+8, y-8);
           }
         } catch(_) {}
       } else if (id === 'library-overview') {
@@ -670,32 +697,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = btn.getAttribute('data-id');
       if (act === 'pdf') { window.open('/report', '_blank'); toast('Exporting PDF (mock)'); }
     }));
+    // tiny transport
+    function beep(freq, durMs){
+      audioCtx = audioCtx || new AudioContext();
+      const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+      o.type='sine'; o.frequency.value = freq; g.gain.value=0.001; g.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (durMs||180)/1000);
+      o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + (durMs||180)/1000);
+    }
+    list.querySelectorAll('.play').forEach(b=> b.addEventListener('click', ()=> beep(660,200)));
+    list.querySelectorAll('.pause').forEach(b=> b.addEventListener('click', ()=> beep(330,140)));
+    list.querySelectorAll('.prev').forEach(b=> b.addEventListener('click', ()=> beep(440,160)));
+    list.querySelectorAll('.next').forEach(b=> b.addEventListener('click', ()=> beep(880,120)));
     showDetail('one-dance');
   }
 
-  // Mini player behavior (demo: cycles through visible list)
-  function setPlayer(idx){
-    const cards = Array.from(document.querySelectorAll('#grid .card'));
-    if (!cards.length) return;
-    playerIdx = (idx + cards.length) % cards.length;
-    const card = cards[playerIdx];
-    const tid = card.getAttribute('data-tid');
-    const t = lastLibrary.find(x=>x.id===tid) || lastLibrary[playerIdx] || {};
-    if (playerTitle) playerTitle.textContent = t.filename || '—';
-  }
-  function tick(){
-    if (!playing || !playerBar) return;
-    const num = parseFloat(playerBar.style.width || '0') || 0;
-    const next = (num + 1) % 100; playerBar.style.width = next + '%';
-  }
-  if (playerPlay) playerPlay.addEventListener('click', ()=>{
-    playing = !playing; playerPlay.textContent = playing ? '⏸' : '▶';
-    if (playerTimer) { clearInterval(playerTimer); playerTimer = null; }
-    if (playing) playerTimer = setInterval(tick, 200);
-  });
-  if (playerPrev) playerPrev.addEventListener('click', ()=>{ setPlayer(playerIdx-1); });
-  if (playerNext) playerNext.addEventListener('click', ()=>{ setPlayer(playerIdx+1); });
-  setPlayer(0);
+  // Removed mini player behavior
 
   // Lightweight agentic helpers (rule-based)
   function renderList(selector, items){
