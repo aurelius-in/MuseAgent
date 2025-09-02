@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const shortcutsBtn = document.getElementById('shortcuts-btn');
   const shortcuts = document.getElementById('shortcuts');
   const shortcutsClose = document.getElementById('shortcuts-close');
+  const search = document.getElementById('search');
   const exportJsonBtn = document.getElementById('export-json');
   const exportCsvBtn = document.getElementById('export-csv');
   const toastEl = document.getElementById('toast');
@@ -143,6 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })();
     let tracks = j.tracks || [];
+    // Search by filename or mood
+    try {
+      const q = (search && search.value || '').toLowerCase().trim();
+      if (q) tracks = tracks.filter(t => String(t.filename||'').toLowerCase().includes(q) || String(t.tags?.mood||'').toLowerCase().includes(q));
+    } catch(_){ }
     // Apply client-side filters
     try {
       const keyVal = filterKey && filterKey.value || '';
@@ -230,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (reloadLib) reloadLib.addEventListener('click', () => { playClick(); loadLibrary(); });
   if (applyFilters) applyFilters.addEventListener('click', ()=> { playClick(); loadLibrary(1); });
+  if (search) search.addEventListener('input', ()=> loadLibrary(1));
   if (selectToggle) selectToggle.addEventListener('click', ()=> { selectionMode = !selectionMode; toast(selectionMode? 'Selection ON' : 'Selection OFF'); loadLibrary(); });
   if (shortcutsBtn && shortcuts) shortcutsBtn.addEventListener('click', ()=> shortcuts.classList.add('show'));
   if (shortcutsClose && shortcuts) shortcutsClose.addEventListener('click', ()=> shortcuts.classList.remove('show'));
@@ -429,6 +436,27 @@ document.addEventListener('DOMContentLoaded', () => {
       try { import('./charts.js').then(mod => {
         mod.drawBars(document.getElementById('reports-dist'), t.features?.chroma_mean || []);
         mod.drawRadar(document.getElementById('reports-keys'), t.features?.mfcc_mean || []);
+        // Simple mood map: plot (energy vs valence) approximated from tempo and major/minor
+        const canvas = document.getElementById('reports-map');
+        if (canvas && canvas.getContext){
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          // axes
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.beginPath(); ctx.moveTo(20, canvas.height-20); ctx.lineTo(canvas.width-20, canvas.height-20); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(20, canvas.height-20); ctx.lineTo(20, 20); ctx.stroke();
+          // point
+          const energy = Math.min(1, Math.max(0, (t.tempo_bpm||120)/200));
+          const isMinor = /m$/.test(String(t.key_guess||''));
+          const valence = isMinor ? 0.35 : 0.7;
+          const x = 20 + energy * (canvas.width - 40);
+          const y = (canvas.height - 20) - valence * (canvas.height - 40);
+          ctx.fillStyle = 'rgba(242,212,96,0.9)';
+          ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.fillText('Energy →', canvas.width-70, canvas.height-8);
+          ctx.save(); ctx.translate(8, 40); ctx.rotate(-Math.PI/2); ctx.fillText('Valence →', 0,0); ctx.restore();
+        }
       }); } catch(_){ }
     }
     if (sidebar){
@@ -575,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
         results.innerHTML = items.map(t => (
           `<div class="card" style="margin-top:.5rem">`+
           `<div><b>${t.filename}</b></div>`+
-          `<div class="muted">BPM ${t.tempo_bpm} • Key ${t.key_guess}</div>`+
+          `<div class="muted">BPM ${t.tempo_bpm} • Key ${t.key_guess} <button class="tone-btn" data-key="${t.key_guess}" style="margin-left:.5rem">Tone</button></div>`+
           (t.spectrogram_png ? `<img src="${t.spectrogram_png}" alt="spec" style="width:320px;max-width:100%;margin-top:.5rem;border-radius:8px"/>` : '')+
           `<div class="controls" style="margin-top:.5rem">`+
           `<button data-tid="${t.id}" class="similar-btn">Similar</button>`+
@@ -622,6 +650,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           });
         }
+
+        // Bind tone preview buttons
+        results.querySelectorAll('.tone-btn').forEach(btn => btn.addEventListener('click', (ev)=>{
+          const k = ev.currentTarget.getAttribute('data-key');
+          playToneForKey(k);
+        }));
       } catch (err) {
         results.innerHTML = `<span class="muted">Error: ${err}</span>`;
       }

@@ -90,6 +90,7 @@
               <input id="filter-bpm-max" type="number" placeholder="Max" style="width:70px"/>
               <button id="apply-filters">Apply</button>
               <button id="reload-lib" style="border-color:var(--ma-muted);color:var(--ma-muted)">Reload</button>
+              <input id="search" type="search" placeholder="Search…" style="width:160px"/>
               <button id="select-toggle" title="Toggle selection mode">Select</button>
               <button id="tag-selected-btn" title="Tag selected tracks">Tag Selected</button>
               <button id="compare-btn" title="Compare two selected (A/B)">Compare A/B</button>
@@ -115,6 +116,9 @@
               <div class="charts">
                 <canvas id="reports-dist" width="420" height="320"></canvas>
                 <canvas id="reports-keys" width="420" height="320"></canvas>
+              </div>
+              <div class="charts" style="margin-top:1rem">
+                <canvas id="reports-map" width="420" height="320"></canvas>
               </div>
             </section>
           </div>
