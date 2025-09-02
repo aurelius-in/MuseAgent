@@ -24,3 +24,12 @@ class TrackItem(BaseModel):
     tags: Dict[str, Any]
 
 
+class ErrorBody(BaseModel):
+    code: int
+    message: str
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorBody
+
+

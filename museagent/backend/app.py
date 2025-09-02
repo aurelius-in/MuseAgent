@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config.settings import settings
 import time
 from collections import defaultdict
+import logging
+import logging.config
 
 try:
     from .api.v1 import router as api_v1
@@ -15,6 +17,12 @@ except Exception:
 
 def create_app() -> FastAPI:
     app = FastAPI(title="MuseAgent API", version="0.1.0")
+    # Logging
+    try:
+        logging.config.fileConfig("museagent/backend/config/logging.ini", disable_existing_loggers=False)
+    except Exception:
+        logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL, logging.INFO))
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

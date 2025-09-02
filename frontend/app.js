@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const reportsList = document.getElementById('reports-list');
   const exportJsonBtn = document.getElementById('export-json');
   const exportCsvBtn = document.getElementById('export-csv');
+  const toastEl = document.getElementById('toast');
   const detail = document.getElementById('detail');
   const detailTitle = document.getElementById('detail-title');
   const detailMeta = document.getElementById('detail-meta');
@@ -88,6 +89,13 @@ document.addEventListener('DOMContentLoaded', () => {
     detail.classList.add('show');
   }
   if (detailClose) detailClose.addEventListener('click', () => detail.classList.remove('show'));
+
+  function toast(message) {
+    if (!toastEl) return;
+    toastEl.textContent = String(message || '');
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 1600);
+  }
 
   async function loadLibrary(page=1) {
     if (!grid) return;
@@ -183,6 +191,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.addEventListener('hashchange', onHashChange);
   onHashChange();
+  // Keyboard nav for tabs and ESC to close modals
+  window.addEventListener('keydown', (e) => {
+    const activeModal = document.querySelector('.detail.show');
+    if (e.key === 'Escape' && activeModal) {
+      activeModal.remove();
+      return;
+    }
+    if (!e.ctrlKey) return;
+    const tabs = ['analyze','explore','reports'];
+    const name = (location.hash || '#analyze').replace('#','');
+    const idx = tabs.indexOf(name);
+    if (e.key === 'ArrowRight') { const n = tabs[(idx+1)%tabs.length]; location.hash = '#' + n; }
+    if (e.key === 'ArrowLeft') { const n = tabs[(idx-1+tabs.length)%tabs.length]; location.hash = '#' + n; }
+  });
 
   async function renderReports() {
     if (!reportsList) return;
@@ -212,10 +234,10 @@ document.addEventListener('DOMContentLoaded', () => {
     reportsList.querySelectorAll('.report-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
       playClick();
       const tid = ev.currentTarget.getAttribute('data-tid');
-      if (offlineToggle && offlineToggle.checked){ alert('PDF reports are unavailable in offline demo.'); return; }
+      if (offlineToggle && offlineToggle.checked){ toast('Offline demo: report disabled'); return; }
       const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track_id: tid })});
       const j = await r.json();
-      if (j.pdf) window.open(j.pdf, '_blank');
+      if (j.pdf) { window.open(j.pdf, '_blank'); toast('Opening report...'); } else { toast('Report unavailable'); }
     }));
 
     reportsList.querySelectorAll('.preview-btn').forEach(btn => btn.addEventListener('click', async (ev) => {
@@ -232,9 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (offlineToggle && offlineToggle.checked) {
         const blob = new Blob([JSON.stringify({ tracks }, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'library.json'; a.click(); URL.revokeObjectURL(url);
+        const a = document.createElement('a'); a.href = url; a.download = 'library.json'; a.click(); URL.revokeObjectURL(url); toast('Exported JSON');
       } else {
-        const r = await fetch('/export?fmt=json'); const j = await r.json(); if (j.path) window.open(j.path, '_blank');
+        const r = await fetch('/export?fmt=json'); const j = await r.json(); if (j.path) { window.open(j.path, '_blank'); toast('Exporting JSON'); } else { toast('Export failed'); }
       }
     };
     if (exportCsvBtn) exportCsvBtn.onclick = async () => {
@@ -244,9 +266,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const rows = tracks.map(t => header.map(h => t[h] ?? '').join(','));
         const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'library.csv'; a.click(); URL.revokeObjectURL(url);
+        const a = document.createElement('a'); a.href = url; a.download = 'library.csv'; a.click(); URL.revokeObjectURL(url); toast('Exported CSV');
       } else {
-        const r = await fetch('/export?fmt=csv'); const j = await r.json(); if (j.path) window.open(j.path, '_blank');
+        const r = await fetch('/export?fmt=csv'); const j = await r.json(); if (j.path) { window.open(j.path, '_blank'); toast('Exporting CSV'); } else { toast('Export failed'); }
       }
     };
   }
