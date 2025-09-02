@@ -50,6 +50,7 @@
         <div class="header-exports" style="margin-left:1rem;display:flex;gap:.5rem">
           <button id="export-json">Export JSON</button>
           <button id="export-csv" style="border-color:var(--ma-accent-cool);color:var(--ma-accent-cool)">Export CSV</button>
+          <button id="export-selected-csv" title="Export selected rows" style="border-color:var(--ma-fg);color:var(--ma-fg)">Export Selected</button>
         </div>
       </div>
     </header>
@@ -78,6 +79,20 @@
             <canvas id="analyze-radar" width="420" height="320"></canvas>
             <canvas id="analyze-chroma" width="420" height="320"></canvas>
           </div>
+          <div class="card" style="margin-top:1rem">
+            <h2 style="margin:0 0 .5rem 0">Tap Tempo & Metronome</h2>
+            <div class="row" style="margin-bottom:.5rem">
+              <button id="tap-btn">Tap</button>
+              <div class="muted">Current: <span id="tap-bpm">—</span> bpm</div>
+              <label class="toggle"><input id="metro-toggle" type="checkbox"/><span class="slider"></span><span class="label">Metronome</span></label>
+            </div>
+            <div class="muted" id="tap-help">Tap at least 4 times to estimate BPM; toggle metronome to hear clicks.</div>
+          </div>
+
+          <div class="card" style="margin-top:1rem">
+            <h2 style="margin:0 0 .5rem 0">Key Trainer</h2>
+            <div id="key-trainer" class="row" style="flex-wrap:wrap"></div>
+          </div>
           
           <div class="card" style="margin-top:1rem">
             <h2 style="margin:0 0 .5rem 0">AI Agents</h2>
@@ -85,6 +100,7 @@
               <button id="agent-dance">Find danceable set</button>
               <button id="agent-ambient">Compile moody ambient</button>
               <button id="agent-summarize">Summarize library</button>
+              <button id="agent-autotag">Auto‑tag selected</button>
             </div>
             <div id="agent-output" class="muted"></div>
           </div>

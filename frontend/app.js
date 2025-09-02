@@ -66,6 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('search');
   const promptPlaylistBtn = document.getElementById('prompt-playlist-btn');
   const mapToggleBtn = document.getElementById('map-toggle-btn');
+  const exportSelectedCsvBtn = document.getElementById('export-selected-csv');
+  const tapBtn = document.getElementById('tap-btn');
+  const tapBpm = document.getElementById('tap-bpm');
+  const metroToggle = document.getElementById('metro-toggle');
+  const keyTrainer = document.getElementById('key-trainer');
+  const agentAutotag = document.getElementById('agent-autotag');
   // Mini player controls
   const player = document.getElementById('player');
   const playerTitle = document.getElementById('player-title');
@@ -294,6 +300,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!mood) return;
     lastLibrary.forEach(t=>{ if (selectedIds.has(t.id)) { t.tags = t.tags || {}; t.tags.mood = mood; } });
     toast(`Tagged ${selectedIds.size} track(s) with '${mood}'`);
+    loadLibrary();
+  });
+
+  if (exportSelectedCsvBtn) exportSelectedCsvBtn.addEventListener('click', ()=>{
+    if (!selectedIds.size){ toast('No selection'); return; }
+    const header = ['id','filename','tempo_bpm','key_guess'];
+    const rows = lastLibrary.filter(t=>selectedIds.has(t.id)).map(t=> header.map(h => t[h] ?? '').join(','));
+    const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download='selected.csv'; a.click(); URL.revokeObjectURL(url);
+  });
+
+  // Tap tempo and Metronome
+  let taps = [];
+  if (tapBtn) tapBtn.addEventListener('click', ()=>{
+    const now = performance.now(); taps.push(now); if (taps.length > 8) taps.shift();
+    if (taps.length >= 2){ const diffs = []; for (let i=1;i<taps.length;i++) diffs.push(taps[i]-taps[i-1]);
+      const avg = diffs.reduce((a,b)=>a+b,0)/diffs.length; const bpm = Math.round(60000/avg);
+      if (tapBpm) tapBpm.textContent = String(bpm);
+      if (metroToggle && metroToggle.checked) startMetronome(bpm);
+    }
+  });
+  let metroTimer=null;
+  function startMetronome(bpm){
+    stopMetronome();
+    const interval = Math.max(150, 60000/Math.max(40, Math.min(240, bpm||120)));
+    metroTimer = setInterval(()=>{ playClick(); }, interval);
+  }
+  function stopMetronome(){ if (metroTimer){ clearInterval(metroTimer); metroTimer=null; } }
+  if (metroToggle) metroToggle.addEventListener('change', ()=>{
+    const bpm = Number((tapBpm && tapBpm.textContent) || 120) || 120;
+    if (metroToggle.checked) startMetronome(bpm); else stopMetronome();
+  });
+
+  // Key trainer
+  function initKeyTrainer(){
+    if (!keyTrainer) return;
+    const keys = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    keyTrainer.innerHTML = keys.map(k=>`<button class="kt" data-k="${k}">${k}</button>`).join('');
+    keyTrainer.querySelectorAll('button.kt').forEach(btn=> btn.addEventListener('click', ()=> playToneForKey(btn.getAttribute('data-k'))));
+  }
+  initKeyTrainer();
+
+  // Agent: auto-tag selection (simple rules)
+  if (agentAutotag) agentAutotag.addEventListener('click', ()=>{
+    if (!selectedIds.size){ toast('Select some tracks'); return; }
+    let changed=0; lastLibrary.forEach(t=>{
+      if (!selectedIds.has(t.id)) return;
+      const bpm = t.tempo_bpm||0; const isMinor = /m$/.test(String(t.key_guess||''));
+      const mood = bpm>120 && !isMinor ? 'energetic' : bpm<90 && isMinor ? 'dark' : 'chill';
+      t.tags = t.tags || {}; if (t.tags.mood !== mood){ t.tags.mood = mood; changed++; }
+    });
+    agentOutput.textContent = changed ? `Auto‑tagged mood for ${changed} track(s).` : 'No changes applied.';
     loadLibrary();
   });
 
