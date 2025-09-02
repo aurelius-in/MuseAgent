@@ -58,6 +58,16 @@
           <h2 style="margin-top:0">Analyze Tracks</h2>
           <form id="upload-form">
             <input id="file-input" type="file" multiple accept="audio/*" />
+            <label class="toggle" style="margin-left:.5rem">
+              <input id="enrich-toggle" type="checkbox" />
+              <span class="slider"></span>
+              <span class="label">Enrich</span>
+            </label>
+            <label class="toggle" style="margin-left:.5rem">
+              <input id="generate-toggle" type="checkbox" />
+              <span class="slider"></span>
+              <span class="label">Generate</span>
+            </label>
             <button id="analyze-btn" type="submit">Analyze</button>
           </form>
           <div id="results" style="margin-top:1rem"></div>
