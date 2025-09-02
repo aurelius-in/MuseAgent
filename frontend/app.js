@@ -43,11 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabAnalyze = document.getElementById('tab-analyze');
   const tabExplore = document.getElementById('tab-explore');
   const tabInsights = document.getElementById('tab-insights');
+  const tabGenerate = document.getElementById('tab-generate');
   const tabReports = null;
   const tabMore = null;
   const panelAnalyze = document.getElementById('panel-analyze');
   const panelExplore = document.getElementById('panel-explore');
   const panelInsights = document.getElementById('panel-insights');
+  const panelGenerate = document.getElementById('panel-generate');
   const panelReports = null;
   const panelMore = null;
   const reportsList = document.getElementById('reports-list');
@@ -96,6 +98,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const agentSummarize = document.getElementById('agent-summarize');
   const agentOutput = document.getElementById('agent-output');
   const insightsList = document.getElementById('insights-list');
+  // Generate elements
+  const genForm = document.getElementById('gen-form');
+  const genGenre = document.getElementById('gen-genre');
+  const genMood = document.getElementById('gen-mood');
+  const genKey = document.getElementById('gen-key');
+  const genBpm = document.getElementById('gen-bpm');
+  const genDuration = document.getElementById('gen-duration');
+  const genCreativity = document.getElementById('gen-creativity');
+  const genSeed = document.getElementById('gen-seed');
+  const genLyricsPrompt = document.getElementById('gen-lyrics-prompt');
+  const genDescribe = document.getElementById('gen-describe');
+  const genLanguage = document.getElementById('gen-language');
+  const genRhyme = document.getElementById('gen-rhyme');
+  const genEngine = document.getElementById('gen-engine');
+  const genVocals = document.getElementById('gen-vocals');
+  const genRandomize = document.getElementById('gen-randomize');
+  const genResults = document.getElementById('gen-results');
   // Chat elements
   const chat = document.getElementById('chat');
   const openChat = document.getElementById('open-chat');
@@ -582,11 +601,15 @@ document.addEventListener('DOMContentLoaded', () => {
         detail.innerHTML = `
           <div class="card">
             <h3 style="margin:0 0 .25rem 0">One Dance — Drake</h3>
-            <div class="muted">Smart analysis powered by MuseAgent</div>
+            <div class="muted">Smart Analysis (Feature Radar)</div>
             <div style="margin-top:.6rem;display:flex;justify-content:center">
               <canvas id="ins-radar" width="420" height="300" style="max-width:100%"></canvas>
             </div>
-            <div class="muted" style="text-align:center;margin-top:.25rem;font-size:.9rem">Feature Radar — danceability, energy, valence, acousticness, speechiness, instrumentalness, liveness</div>
+            <div class="card" style="margin-top:.6rem">
+              <h4 style="margin:0 0 .25rem 0">Energy vs Valence (Mood Map)</h4>
+              <canvas id="ins-mood" width="560" height="280" style="width:100%;max-width:560px;display:block;margin:0 auto"></canvas>
+              <div class="muted" style="text-align:center;margin-top:.25rem;font-size:.85rem">Dots show library tracks (highlight = One Dance)</div>
+            </div>
             <div style="margin-top:.6rem">
               <h4>Summary</h4>
               <p>One Dance blends dancehall, afrobeats, and house influences with a steady four-on-the-floor rhythm around ~104 bpm. Harmony centres on a minor tonal area with sparse voicings, syncopated keys, and a deep bass groove. Vocals use repetitive, hook-driven phrases and call‑and‑response textures.</p>
@@ -614,10 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li>Side‑chained bass/kick interaction; subtle saturation on low mids</li>
                 <li>Short plate/room reverbs; mono‑compatible percussion; wide pads</li>
               </ul>
-            </div>
-            <div class="card" style="margin-top:.6rem">
-              <h4 style="margin:0 0 .25rem 0">Energy vs Valence (Mood Map)</h4>
-              <canvas id="ins-mood" width="560" height="280" style="width:100%;max-width:560px;display:block;margin:0 auto"></canvas>
             </div>
           </div>`;
         try {
@@ -654,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             ctx.closePath(); ctx.fillStyle = 'rgba(242,212,96,0.22)'; ctx.fill(); ctx.strokeStyle='rgba(242,212,96,0.8)'; ctx.stroke();
           }
-          // Mood map at bottom (multi-point: plot library energy/valence with highlight)
+          // Mood map (multi-point): plot library energy/valence with highlight and simple mood heuristics
           const mood = document.getElementById('ins-mood');
           if (mood && mood.getContext){
             const ctx = mood.getContext('2d'); const w=mood.width, h=mood.height; ctx.clearRect(0,0,w,h);
@@ -662,25 +681,37 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(w-20,h-30); ctx.stroke(); ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(40,20); ctx.stroke();
             ctx.fillStyle='rgba(234,231,242,0.8)'; ctx.font='12px Montserrat,sans-serif'; ctx.fillText('Energy →', w-90, h-12);
             ctx.save(); ctx.translate(18, 40); ctx.rotate(-Math.PI/2); ctx.fillText('Valence →', 0,0); ctx.restore();
-            // background density (very light grid dots)
+            // helpers
             function px(e){ return 40 + e * (w-60); }
             function py(v){ return (h-30) - v * (h-60); }
+            // approximate energy/valence from tempo, key, and mood tag
+            function estimatePoint(t){
+              const tempo = Number(t.tempo_bpm||0);
+              let energy = Math.min(1, Math.max(0.05, tempo/200));
+              const moodTag = String(t.tags?.mood||'').toLowerCase();
+              if (/energetic|upbeat|anthemic/.test(moodTag)) energy = Math.min(1, energy + 0.15);
+              if (/calm|ambient|chill|tranquil/.test(moodTag)) energy = Math.max(0, energy - 0.15);
+              const isMinor = /m$/.test(String(t.key_guess||''));
+              let valence = isMinor ? 0.4 : 0.65;
+              if (/happy|bright/.test(moodTag)) valence = Math.min(1, valence + 0.2);
+              if (/dark|sad|melanch/.test(moodTag)) valence = Math.max(0, valence - 0.2);
+              return { e: energy, v: valence };
+            }
             // plot all library items if available
             const all = (lastLibrary||[]);
-            ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.font='10px Montserrat,sans-serif';
-            all.slice(0,80).forEach(t=>{
-              const e = Math.min(1, Math.max(0, (t.tempo_bpm||120)/200));
-              const minor = /m$/.test(String(t.key_guess||''));
-              const v = minor ? 0.35 : 0.7;
+            all.slice(0,120).forEach(t=>{
+              const { e, v } = estimatePoint(t);
               const x = px(e), y = py(v);
-              ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fillRect(x-1,y-1,2,2);
+              ctx.fillStyle = 'rgba(255,255,255,0.28)';
+              ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
             });
             // highlight One Dance
             const tempo = 104; const energy = Math.min(1, Math.max(0, tempo/200));
             const isMinor = true; const valence = isMinor ? 0.45 : 0.7;
             const x = px(energy); const y = py(valence);
-            ctx.fillStyle='rgba(242,212,96,0.95)'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle='rgba(242,212,96,0.9)'; ctx.fillText('One Dance', x+8, y-8);
+            ctx.fillStyle='rgba(255,80,80,0.95)'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='rgba(255,80,80,0.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.stroke();
+            ctx.fillStyle='rgba(255,80,80,0.95)'; ctx.fillText('One Dance', x+10, y-10);
           }
         } catch(_) {}
       } else if (id === 'library-overview') {
@@ -840,10 +871,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Hash-based tabs
   function setActiveTab(name) {
-    [tabAnalyze, tabExplore, tabInsights].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
-    [panelAnalyze, panelExplore, panelInsights].forEach(el => el && el.classList.remove('active'));
+    [tabAnalyze, tabExplore, tabInsights, tabGenerate].forEach(el => { if (el){ el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
+    [panelAnalyze, panelExplore, panelInsights, panelGenerate].forEach(el => el && el.classList.remove('active'));
     if (name === 'explore') { if (tabExplore){ tabExplore.classList.add('active'); tabExplore.setAttribute('aria-selected','true'); } panelExplore?.classList.add('active'); }
     else if (name === 'insights') { if (tabInsights){ tabInsights.classList.add('active'); tabInsights.setAttribute('aria-selected','true'); } panelInsights?.classList.add('active'); renderInsights(); }
+    else if (name === 'generate') { if (tabGenerate){ tabGenerate.classList.add('active'); tabGenerate.setAttribute('aria-selected','true'); } panelGenerate?.classList.add('active'); }
     else { if (tabAnalyze){ tabAnalyze.classList.add('active'); tabAnalyze.setAttribute('aria-selected','true'); } panelAnalyze?.classList.add('active'); }
   }
   function onHashChange() {
@@ -852,6 +884,93 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.addEventListener('hashchange', onHashChange);
   onHashChange();
+
+  // Generation logic (offline mock)
+  function generateLyrics(prompt, lang, rhyme){
+    const themes = (prompt||'').split(/[,\s]+/).filter(Boolean).slice(0,6);
+    const lines = [];
+    function L(words){ return words[Math.floor(Math.random()*words.length)]; }
+    const ends = ['light','night','fire','desire','higher','wire','alone','home','tone','unknown'];
+    for (let v=0; v<2; v++){
+      lines.push(`${L(themes)||'Midnight'} ${L(['city','ocean','neon','summer','shadow'])} ${L(['glow','flow','call','slow'])}`);
+      lines.push(`${L(['we','i','you'])} ${L(['chase','feel','hear','ride'])} the ${L(['beat','waves','rhythm','echo'])} tonight`);
+      lines.push(`${L(['hold','keep','breathe','stay'])} me ${L(['closer','tighter','softer','near'])}`);
+      lines.push(`till the ${L(['morning','sunrise','daylight'])} ${L(['comes','arrives','returns'])}`);
+      lines.push('');
+    }
+    lines.push('[Chorus]');
+    lines.push(`${L(['dance','run','rise'])} with me through the ${L(['night','fire','storm'])}`);
+    lines.push(`${L(['hearts','hands','voices'])} in ${L(['time','sync','line'])}, we burn so ${L(['bright','high','true'])}`);
+    lines.push(`${L(['don\'t','never'])} let go, take me ${L(['higher','home','over'])}`);
+    lines.push('');
+    return lines.join('\n');
+  }
+  function randomizeGen(){
+    if (genGenre) genGenre.value = ['pop','hiphop','edm','rnb','rock','ambient','classical'][Math.floor(Math.random()*7)];
+    if (genMood) genMood.value = ['happy','energetic','chill','dark','melancholic'][Math.floor(Math.random()*5)];
+    if (genKey) genKey.value = ['C','G','D','A','E','F','Am','Em','Dm','Gm'][Math.floor(Math.random()*10)];
+    if (genBpm) genBpm.value = String(80 + Math.floor(Math.random()*81));
+    if (genDuration) genDuration.value = String(15 + Math.floor(Math.random()*91));
+    if (genCreativity) genCreativity.value = String((Math.random()).toFixed(2));
+    if (genSeed) genSeed.value = String(Math.floor(Math.random()*1000000));
+  }
+  if (genRandomize) genRandomize.addEventListener('click', ()=> randomizeGen());
+  if (genForm && genResults) genForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    genResults.innerHTML = '<div class="skeleton" style="height:120px"></div>';
+    const meta = {
+      genre: genGenre?.value, mood: genMood?.value, key: genKey?.value,
+      bpm: Number(genBpm?.value||110), duration: Number(genDuration?.value||30),
+      creativity: Number(genCreativity?.value||0.5), seed: Number(genSeed?.value||0),
+      vocals: genVocals?.value || 'vocal'
+    };
+    const lyrics = generateLyrics(genLyricsPrompt?.value||'', genLanguage?.value||'en', genRhyme?.value||'AABB');
+    // Online try backend /generate, else offline mock
+    let resolved = null;
+    if (offlineToggle && !offlineToggle.checked) {
+      try {
+        const r = await fetch('/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt: (genDescribe?.value||genLyricsPrompt?.value||''), engine: genEngine?.value || 'melody', ...meta }) });
+        resolved = await r.json();
+      } catch(_) {}
+    }
+    const nowId = 'gen-' + String(Date.now());
+    const audioUrl = resolved?.web_path || '/assets/ma-logo.png';
+    const mock = { id: nowId, filename: `${meta.genre}-${meta.mood}-gen-${nowId}.mp3`, tempo_bpm: meta.bpm, key_guess: meta.key, tags:{ mood: meta.mood }, preview: audioUrl, features:{ mfcc_mean:[0.1,0.12,0.09,0.07,0.12,0.1,0.09] } };
+    genResults.innerHTML = `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <b>Generated Track</b>
+          <div class="row">
+            <button id="gen-add-lib">Add to Library</button>
+            <button id="gen-dl-wav">Download WAV</button>
+            <button id="gen-dl-mp3">Download MP3</button>
+          </div>
+        </div>
+        <div class="muted">${mock.filename} • ${meta.bpm} bpm • Key ${meta.key}</div>
+        <div class="controls" style="margin-top:.5rem">
+          <button id="gen-play">Play ▶</button>
+          <button id="gen-pause">Pause ⏸</button>
+        </div>
+        <div class="card" style="margin-top:.6rem">
+          <h4 style="margin:0 0 .25rem 0">Lyrics</h4>
+          <pre style="white-space:pre-wrap">${resolved?.lyrics || lyrics}</pre>
+        </div>
+      </div>`;
+    const playBtn = document.getElementById('gen-play');
+    const pauseBtn = document.getElementById('gen-pause');
+    const addBtn = document.getElementById('gen-add-lib');
+    const dlWav = document.getElementById('gen-dl-wav');
+    const dlMp3 = document.getElementById('gen-dl-mp3');
+    let currentAudio = null;
+    playBtn?.addEventListener('click', ()=>{ try { if (currentAudio) currentAudio.pause(); currentAudio = new Audio(audioUrl); currentAudio.play(); } catch(_) {} });
+    pauseBtn?.addEventListener('click', ()=>{ try { currentAudio && currentAudio.pause(); } catch(_) {} });
+    addBtn?.addEventListener('click', ()=>{
+      lastLibrary.push(mock); toast('Added generated track to library');
+    });
+    function fakeDownload(name){ const blob = new Blob(['Generated placeholder'], {type:'text/plain'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
+    dlWav?.addEventListener('click', ()=> fakeDownload('track.wav'));
+    dlMp3?.addEventListener('click', ()=> fakeDownload('track.mp3'));
+  });
   // Keyboard nav, selection, tagging, playlist, chat
   window.addEventListener('keydown', (e) => {
     const activeModal = document.querySelector('.detail.show');

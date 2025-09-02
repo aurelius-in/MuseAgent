@@ -33,6 +33,7 @@
       <nav class="app-nav" role="tablist" aria-label="Primary">
         <a href="#analyze" id="tab-analyze" class="tab" role="tab" aria-selected="true" aria-controls="panel-analyze">Analyze</a>
         <a href="#explore" id="tab-explore" class="tab" role="tab" aria-selected="false" aria-controls="panel-explore">Explore</a>
+        <a href="#generate" id="tab-generate" class="tab" role="tab" aria-selected="false" aria-controls="panel-generate">Generate</a>
         <a href="#insights" id="tab-insights" class="tab" role="tab" aria-selected="false" aria-controls="panel-insights">Insights</a>
       </nav>
       <div class="header-actions">
@@ -46,7 +47,7 @@
           <span class="slider"></span>
           <span id="label-offline" class="label">Online</span>
         </label>
-        <button id="open-chat" title="Ask MuseAgent">Chat</button>
+        
         
         <div class="header-status" aria-label="Backend status" title="API status" style="margin-left:1rem;display:flex;align-items:center;gap:.6rem">
           <span class="status-item"><span id="dot-health" class="status-dot"></span><span class="status-label">API</span></span>
@@ -56,61 +57,108 @@
             <span id="ntotal" class="muted"></span>
           </span>
         </div>
-        <button id="open-apikey" title="Set API Key" style="margin-left:.5rem">API Key</button>
       </div>
     </header>
 
     <main>
       <div id="panel-analyze" class="panel active" role="tabpanel" aria-labelledby="tab-analyze">
+        <div class="analyze-split">
+          <section class="card analyze-left">
+            <h2 style="margin-top:0">Analyze Tracks</h2>
+            <form id="upload-form" class="row">
+              <input id="file-input" type="file" multiple accept="audio/*,video/*,.mp3,.wav,.flac,.mp4,.m4a" />
+              <label class="toggle" style="margin-left:.5rem">
+                <input id="enrich-toggle" type="checkbox" />
+                <span class="slider"></span>
+                <span id="label-enrich" class="label">Enrich</span>
+              </label>
+              <label class="toggle" style="margin-left:.5rem">
+                <input id="generate-toggle" type="checkbox" />
+                <span class="slider"></span>
+                <span id="label-generate" class="label">Generate</span>
+              </label>
+              <button id="analyze-btn" type="submit">Analyze</button>
+            </form>
+            <div id="dropzone" class="dropzone" style="margin-top:.75rem">Drop audio/video files here to analyze</div>
+            <div id="results" style="margin-top:1rem"></div>
+            <div id="analyze-widgets" class="charts" style="margin-top:1rem; display:none">
+              <canvas id="analyze-radar" width="300" height="220"></canvas>
+              <canvas id="analyze-chroma" width="300" height="220"></canvas>
+            </div>
+            <div class="card" style="margin-top:1rem">
+              <h2 style="margin:0 0 .5rem 0">Tap Tempo & Metronome</h2>
+              <div class="row" style="margin-bottom:.5rem">
+                <button id="tap-btn">Tap</button>
+                <div class="muted">Current: <span id="tap-bpm">—</span> bpm</div>
+                <label class="toggle"><input id="metro-toggle" type="checkbox"/><span class="slider"></span><span class="label">Metronome</span></label>
+              </div>
+              <div class="muted" id="tap-help">Tap at least 4 times to estimate BPM; toggle metronome to hear clicks.</div>
+            </div>
+
+            <div class="card" style="margin-top:1rem">
+              <h2 style="margin:0 0 .5rem 0">Key Trainer</h2>
+              <div id="key-trainer" class="row" style="flex-wrap:wrap"></div>
+            </div>
+            
+            <div class="card" style="margin-top:1rem">
+              <h2 style="margin:0 0 .5rem 0">AI Agents</h2>
+              <div class="controls" style="margin-bottom:.5rem">
+                <button id="agent-dance">Find danceable set</button>
+                <button id="agent-ambient">Compile moody ambient</button>
+                <button id="agent-summarize">Summarize library</button>
+                <button id="agent-autotag">Auto‑tag selected</button>
+              </div>
+              <div id="agent-output" class="muted"></div>
+            </div>
+          </section>
+          <section class="card analyze-right">
+            <h2 style="margin:0 0 .5rem 0">Ask MuseAgent</h2>
+            <div id="analyze-chat-log" class="chat-log" style="height:50vh"></div>
+            <form id="analyze-chat-form" class="row" autocomplete="off" style="margin-top:.5rem">
+              <input id="analyze-chat-text" type="text" placeholder="Ask Anything" style="flex:1"/>
+              <button id="analyze-chat-send" type="submit" title="Send">↑</button>
+            </form>
+          </section>
+        </div>
+      </div>
+      <div id="panel-generate" class="panel" role="tabpanel" aria-labelledby="tab-generate">
         <section class="card">
-          <h2 style="margin-top:0">Analyze Tracks</h2>
-          <form id="upload-form" class="row">
-            <input id="file-input" type="file" multiple accept="audio/*,video/*,.mp3,.wav,.flac,.mp4,.m4a" />
-            <label class="toggle" style="margin-left:.5rem">
-              <input id="enrich-toggle" type="checkbox" />
-              <span class="slider"></span>
-              <span id="label-enrich" class="label">Enrich</span>
-            </label>
-            <label class="toggle" style="margin-left:.5rem">
-              <input id="generate-toggle" type="checkbox" />
-              <span class="slider"></span>
-              <span id="label-generate" class="label">Generate</span>
-            </label>
-            <button id="analyze-btn" type="submit">Analyze</button>
+          <h2 style="margin:0 0 .5rem 0">Generate Music</h2>
+          <form id="gen-form" class="row" style="gap:1rem; align-items:flex-end">
+            <div class="row" style="gap:.5rem; flex-wrap:wrap">
+              <select id="gen-genre"><option value="pop">Pop</option><option value="hiphop">Hip‑Hop</option><option value="edm">EDM</option><option value="rnb">R&B</option><option value="rock">Rock</option><option value="ambient">Ambient</option><option value="classical">Classical</option></select>
+              <select id="gen-mood"><option value="happy">Happy</option><option value="energetic">Energetic</option><option value="chill">Chill</option><option value="dark">Dark</option><option value="melancholic">Melancholic</option></select>
+              <select id="gen-key"><option>C</option><option>G</option><option>D</option><option>A</option><option>E</option><option>F</option><option>Am</option><option>Em</option><option>Dm</option><option>Gm</option></select>
+              <label class="toggle"><input id="gen-autochords" type="checkbox" checked/><span class="slider"></span><span class="label">Auto‑chords</span></label>
+              <label style="display:flex;align-items:center;gap:.4rem">BPM <input id="gen-bpm" type="number" value="110" min="60" max="180" style="width:80px"/></label>
+              <label style="display:flex;align-items:center;gap:.4rem">Duration <input id="gen-duration" type="number" value="30" min="5" max="180" style="width:80px"/>s</label>
+              <label style="display:flex;align-items:center;gap:.4rem">Creativity <input id="gen-creativity" type="range" min="0" max="1" step="0.05" value="0.5"/></label>
+              <label style="display:flex;align-items:center;gap:.4rem">Seed <input id="gen-seed" type="number" value="0" min="0" max="999999" style="width:100px"/></label>
+            </div>
+            <div class="card" style="width:100%">
+              <div class="muted" style="margin-bottom:.25rem">Examples: "drum and bass, 170 bpm, dark, influenced by Noisia" • "lyrics about summer nights with hopeful tone" • "ambient piano in Dm, slow 80 bpm" • "edm, catchy hook, Daft Punk vibes"</div>
+              <label for="gen-describe" class="muted" style="font-weight:600">Describe</label>
+              <textarea id="gen-describe" rows="3" placeholder="Describe what to create — genre, influences, mood, tempo, instruments, structure..."></textarea>
+            </div>
+            <div class="row" style="gap:.5rem; width:100%">
+              <select id="gen-language"><option value="en">English</option><option value="es">Spanish</option><option value="fr">French</option><option value="ar">Arabic</option></select>
+              <select id="gen-rhyme"><option value="AABB">AABB (Couplets)</option><option value="ABAB">ABAB (Alternating)</option><option value="free">Free (No scheme)</option></select>
+              <select id="gen-vocals" title="Vocals"><option value="vocal">Vocals</option><option value="instrumental">Instrumental</option></select>
+              <select id="gen-engine" title="Engine">
+                <option value="melody">Hook‑forward (catchy, structured)</option>
+                <option value="verse-chorus">Verse/Chorus (song form)</option>
+                <option value="loop">Loop‑based (groove‑driven)</option>
+                <option value="texture">Atmospheric (evolving, ambient)</option>
+              </select>
+              <button id="gen-randomize" type="button">Randomize</button>
+              <button id="gen-submit" type="submit">Generate</button>
+            </div>
+            <div class="card" style="width:100%">
+              <label for="gen-lyrics-prompt" class="muted" style="font-weight:600">Lyrics prompt</label>
+              <textarea id="gen-lyrics-prompt" rows="5" placeholder="Write or paste lyrics here (or a brief theme)"></textarea>
+            </div>
           </form>
-          <div id="dropzone" class="dropzone" style="margin-top:.75rem">Drop audio/video files here to analyze</div>
-          <div id="results" style="margin-top:1rem"></div>
-          <div id="analyze-widgets" class="charts" style="margin-top:1rem; display:none">
-            <canvas id="analyze-radar" width="300" height="220"></canvas>
-            <canvas id="analyze-chroma" width="300" height="220"></canvas>
-          </div>
-          <div class="card" style="margin-top:1rem">
-            <h2 style="margin:0 0 .5rem 0">Tap Tempo & Metronome</h2>
-            <div class="row" style="margin-bottom:.5rem">
-              <button id="tap-btn">Tap</button>
-              <div class="muted">Current: <span id="tap-bpm">—</span> bpm</div>
-              <label class="toggle"><input id="metro-toggle" type="checkbox"/><span class="slider"></span><span class="label">Metronome</span></label>
-            </div>
-            <div class="muted" id="tap-help">Tap at least 4 times to estimate BPM; toggle metronome to hear clicks.</div>
-          </div>
-
-          <div class="card" style="margin-top:1rem">
-            <h2 style="margin:0 0 .5rem 0">Key Trainer</h2>
-            <div id="key-trainer" class="row" style="flex-wrap:wrap"></div>
-          </div>
-          
-          <div class="card" style="margin-top:1rem">
-            <h2 style="margin:0 0 .5rem 0">AI Agents</h2>
-            <div class="controls" style="margin-bottom:.5rem">
-              <button id="agent-dance">Find danceable set</button>
-              <button id="agent-ambient">Compile moody ambient</button>
-              <button id="agent-summarize">Summarize library</button>
-              <button id="agent-autotag">Auto‑tag selected</button>
-            </div>
-            <div id="agent-output" class="muted"></div>
-          </div>
-
-          
+          <div id="gen-results" style="margin-top:1rem"></div>
         </section>
       </div>
       <div id="panel-insights" class="panel" role="tabpanel" aria-labelledby="tab-insights">
@@ -211,20 +259,7 @@
       </div>
     </div>
 
-    <!-- API key overlay -->
-    <div id="apikey" class="overlay">
-      <div class="overlay-inner">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-          <h3 style="margin:0">API Key</h3>
-          <button id="apikey-close">Close</button>
-        </div>
-        <div class="row" style="margin-bottom:.5rem">
-          <input id="api-key-input" type="text" placeholder="Enter API key" style="min-width:280px"/>
-          <button id="api-key-save">Save</button>
-        </div>
-        <div class="muted">Used for authenticated API requests when Online.</div>
-      </div>
-    </div>
+    
 
     
 
